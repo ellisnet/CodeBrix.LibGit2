@@ -1,0 +1,28 @@
+#!/bin/bash
+
+set -e
+echo "building for $RID"
+
+if [[ $RID =~ arm64 ]]; then
+    arch="arm64"
+elif [[ $RID =~ arm ]]; then
+    arch="armhf"
+elif [[ $RID =~ ppc64le ]]; then
+    arch="powerpc64le"
+else
+    arch="amd64"
+fi
+
+if [[ $RID == linux-musl* ]]; then
+    dockerfile="docker/musl"
+else
+    dockerfile="docker/linux"
+fi
+
+docker buildx build -t $RID -f $dockerfile --build-arg ARCH=$arch .
+
+docker run -t -e RID=$RID --name=$RID $RID
+
+docker cp $RID:/nativebinaries/nuget.package/runtimes nuget.package
+
+docker rm $RID

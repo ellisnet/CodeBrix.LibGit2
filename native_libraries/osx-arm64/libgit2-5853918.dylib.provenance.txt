@@ -1,0 +1,89 @@
+libgit2-5853918.dylib -- macOS ARM64 (osx-arm64)
+================================================================================
+ADOPTED FROM the LibGit2Sharp.NativeBinaries 2.0.324 NuGet package, not built
+here (yet).
+
+Ruling (PLAN_codebrix_libgit2_2026-10-17): the Windows and macOS binaries are
+adopted from LibGit2Sharp.NativeBinaries 2.0.324, which built them from the
+SAME libgit2 commit this repository vendors; the Linux and Android RIDs are
+built here. The script that rebuilds this RID from
+tools/libgit2-native-tools/libgit2/ is in this repository all the same, so it
+can be rebuilt without upstream.
+
+REBUILD: tools/libgit2-native-tools/macos/build.sh arm64
+         - written 2026-10-17, UNRUN
+
+Package           : LibGit2Sharp.NativeBinaries 2.0.324 (nuget.org)
+Package URL       : https://api.nuget.org/v3-flatcontainer/libgit2sharp.nativebinaries/
+                    2.0.324/libgit2sharp.nativebinaries.2.0.324.nupkg
+Package sha256    : c7bb0ed883dc0ed630da41a05f8d97cc5f6d73a6e7d50db3a27d5443bca6bf7e
+Package sha512    : EtQYAupc1Qa696Dx5ENlvf+rPmZOPWhmxmwFeKWv4zUHtYG4meL/zJTGkoQ538Qr
+                    iNZv2hYpmBNNRw/o4s2gHg== (base64)
+Package size      : 10352503 bytes
+Signature         : `dotnet nuget verify --all` exit 0 - nuget.org repository
+                    signature (CN=NuGet.org Repository by Microsoft)
+Downloaded        : 2026-10-17, ONCE, to ~/ClaudeHome/libgit2-upstream-scratch/
+Path in the nupkg : runtimes/osx-arm64/native/libgit2-5853918.dylib
+                    (the file here, the extracted file and the ZIP entry read
+                    straight out of the .nupkg have the same sha256)
+Upstream source   : libgit2sharp.nativebinaries commit 2b95030f15e5 (the
+                    nuspec's <repository commit=...>), libgit2 submodule at
+                    5853918c4c6a7b12f8becf4bd11ff4362ebb9020 (1.8.6)
+
+Output SHA-256    : 568df47ada6fa8a195757f54eb1e64ff13345e1cb995381071eaa259de9aac81
+Output size       : 1214312 bytes
+
+libgit2 version   : 1.8.6, commit 5853918c4c6a7b12f8becf4bd11ff4362ebb9020
+Upstream recipe   : build.libgit2.sh with RID=osx-arm64 on GitHub's macos-14
+                    runner (Apple Silicon; see
+                    tools/libgit2-native-tools/reference-upstream/):
+                      cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF
+                            -DUSE_SSH=exec -DLIBGIT2_FILENAME=git2-5853918
+                            -DCMAKE_OSX_ARCHITECTURES=arm64
+                            -DUSE_HTTPS=ON -DUSE_BUNDLED_ZLIB=ON
+                      cmake --build .
+                    (USE_HTTPS=ON selects SecureTransport on a Mac)
+
+Architecture      : thin Mach-O 64-bit dylib, arm64 (not universal)
+Minimum macOS     : 14.0 (LC_BUILD_VERSION minos; SDK 14.5) - THIS LIBRARY
+                    DOES NOT LOAD ON macOS 13 OR OLDER. Upstream sets no
+                    deployment target, so it is the runner's macOS.
+LC_UUID           : F189FEE4-B727-32FE-9E70-B37FE18B21C7
+Install name      : @rpath/libgit2-5853918.1.8.dylib - as libgit2 builds it;
+                    shipped as libgit2-5853918.dylib; no LC_RPATH
+Signature         : LC_CODE_SIGNATURE present (linker ad-hoc); not re-checked
+                    with codesign (macOS-only)
+Symbols           : NOT stripped (2311 local symbols), as upstream ships it;
+                    no dSYM published
+Links             : CoreFoundation.framework, Security.framework,
+                    /usr/lib/libiconv.2.dylib, /usr/lib/libSystem.B.dylib -
+                    the operating system only
+Backends          : SecureTransport (SSLCreateContext), CommonCrypto SHA-256
+                    (CC_SHA256_*), system regcomp_l, iconv - from the imports
+Exports           : 944 - the identical name set to every other 2.0.324 binary
+                    and to this repository's Linux and Android builds; all 20
+                    REQUIRED_SYMBOLS of linux/pins.env present
+git_libgit2_features(): 15 = THREADS | HTTPS | SSH | NSEC (read from the
+                    function's machine code: mov w0, #0xf; ret)
+
+Verified on Linux : the NDK's llvm-objdump / llvm-nm (load commands, symbol
+                    tables, disassembly) and `file`
+Not verified      : this file has NOT been executed on a Mac by this
+                    repository; codesign / otool were not available - the
+                    smoke test runs as part of macos/build.sh's gate, which
+                    has not run yet.
+
+Vendored on       : 2026-10-17
+
+LICENCE FILES BESIDE THIS ONE (all packed into runtimes/osx-arm64/native/):
+  LICENSE-Libgit2.txt  libgit2's COPYING, verbatim (byte-identical to the
+                       package's libgit2/libgit2.license.txt): GPLv2 WITH the
+                       libgit2 linking exception, plus the licences of the
+                       bundled zlib, PCRE2, llhttp, ntlmclient, SHA-1
+                       collision detection, wildmatch and others
+  LICENSE-Xdiff.txt    the bundled xdiff's own notices (LGPL-2.1-or-later;
+                       xhistogram.c under the Eclipse Distribution License),
+                       verbatim from libgit2/deps/xdiff/ headers
+Upstream's PACKAGING (LibGit2Sharp.NativeBinaries) is MIT, Copyright (c)
+LibGit2Sharp contributors; no LibGit2Sharp-authored code is in this binary.
+See THIRD-PARTY-NOTICES.txt in the repository root.

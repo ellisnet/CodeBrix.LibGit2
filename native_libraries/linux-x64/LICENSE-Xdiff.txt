@@ -1,0 +1,144 @@
+================================================================================
+LICENSE-Xdiff.txt - the notices of the xdiff code compiled into libgit2
+================================================================================
+libgit2 compiles in its bundled copy of LibXDiff (libgit2/deps/xdiff/), the
+diff engine git itself uses. libgit2's COPYING (LICENSE-Libgit2.txt beside this
+file) carries the full text of the GNU Lesser General Public License 2.1 but
+not the xdiff files' own copyright notices, and not the Eclipse Distribution
+License under which one of them (xhistogram.c) is licensed. They are reproduced
+here, VERBATIM, from the file headers in libgit2/deps/xdiff/ at libgit2 commit
+5853918c4c6a7b12f8becf4bd11ff4362ebb9020 (1.8.6):
+
+  * xdiff.h - the LibXDiff notice, as carried (with the year range of the
+    respective file) by xdiff.h, xdiffi.c/.h, xemit.c/.h, xinclude.h,
+    xmacros.h, xprepare.c/.h, xtypes.h and xutils.c/.h - LGPL-2.1-or-later
+  * xmerge.c and xpatience.c - the same notice with their own copyright
+    lines - LGPL-2.1-or-later
+  * xhistogram.c - Eclipse Distribution License v1.0 (a BSD-3-Clause
+    licence), whose full text is in the header itself
+
+(git-xdiff.h, the remaining file, is libgit2's own and covered by COPYING.)
+This file is not an upstream file; it was assembled for CodeBrix.LibGit2 by
+concatenating those headers, unchanged, under the separators below.
+
+--------------------------------------------------------------------------------
+libgit2/deps/xdiff/xdiff.h
+--------------------------------------------------------------------------------
+/*
+ *  LibXDiff by Davide Libenzi ( File Differential Library )
+ *  Copyright (C) 2003  Davide Libenzi
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, see
+ *  <http://www.gnu.org/licenses/>.
+ *
+ *  Davide Libenzi <davidel@xmailserver.org>
+ *
+ */
+
+--------------------------------------------------------------------------------
+libgit2/deps/xdiff/xmerge.c
+--------------------------------------------------------------------------------
+/*
+ *  LibXDiff by Davide Libenzi ( File Differential Library )
+ *  Copyright (C) 2003-2006 Davide Libenzi, Johannes E. Schindelin
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, see
+ *  <http://www.gnu.org/licenses/>.
+ *
+ *  Davide Libenzi <davidel@xmailserver.org>
+ *
+ */
+
+--------------------------------------------------------------------------------
+libgit2/deps/xdiff/xpatience.c
+--------------------------------------------------------------------------------
+/*
+ *  LibXDiff by Davide Libenzi ( File Differential Library )
+ *  Copyright (C) 2003-2016 Davide Libenzi, Johannes E. Schindelin
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, see
+ *  <http://www.gnu.org/licenses/>.
+ *
+ *  Davide Libenzi <davidel@xmailserver.org>
+ *
+ */
+
+--------------------------------------------------------------------------------
+libgit2/deps/xdiff/xhistogram.c
+--------------------------------------------------------------------------------
+/*
+ * Copyright (C) 2010, Google Inc.
+ * and other copyright owners as documented in JGit's IP log.
+ *
+ * This program and the accompanying materials are made available
+ * under the terms of the Eclipse Distribution License v1.0 which
+ * accompanies this distribution, is reproduced below, and is
+ * available at http://www.eclipse.org/org/documents/edl-v10.php
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or
+ * without modification, are permitted provided that the following
+ * conditions are met:
+ *
+ * - Redistributions of source code must retain the above copyright
+ *   notice, this list of conditions and the following disclaimer.
+ *
+ * - Redistributions in binary form must reproduce the above
+ *   copyright notice, this list of conditions and the following
+ *   disclaimer in the documentation and/or other materials provided
+ *   with the distribution.
+ *
+ * - Neither the name of the Eclipse Foundation, Inc. nor the
+ *   names of its contributors may be used to endorse or promote
+ *   products derived from this software without specific prior
+ *   written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ * CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+================================================================================

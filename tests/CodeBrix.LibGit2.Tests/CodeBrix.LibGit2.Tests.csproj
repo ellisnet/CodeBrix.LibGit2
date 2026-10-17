@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>CodeBrix.LibGit2.Tests</AssemblyName>
+    <RootNamespace>CodeBrix.LibGit2.Tests</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <!--
+    The libgit2 native library for test runs is copied beside the test assembly, where
+    Core/NativeMethods.cs probes for it. By default it comes from the committed
+    native_libraries/<host RID>/ folder; pass -p:LibGit2NativeDir=<folder>/ to test against
+    another build of the same libgit2 commit.
+  -->
+  <PropertyGroup>
+    <LibGit2NativeDir Condition="'$(LibGit2NativeDir)' == ''">$(MSBuildThisFileDirectory)..\..\native_libraries\$(NETCoreSdkRuntimeIdentifier)\</LibGit2NativeDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\CodeBrix.LibGit2\CodeBrix.LibGit2.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="xunit.v3" Version="4.0.2" />
+    <PackageReference Include="SilverAssertions.ApacheLicenseForever" Version="1.0.248.1071" />
+    <PackageReference Include="CodeBrix.TestMocks.ApacheLicenseForever" Version="1.0.248.1105" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Resources\**\*.*" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(LibGit2NativeDir)*.so;$(LibGit2NativeDir)*.dylib;$(LibGit2NativeDir)*.dll" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
+
+</Project>

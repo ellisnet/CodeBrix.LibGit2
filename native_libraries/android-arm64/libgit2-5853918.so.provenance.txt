@@ -1,0 +1,103 @@
+libgit2-5853918.so -- Android arm64 (android-arm64, ABI arm64-v8a)
+================================================================================
+This binary was BUILT HERE, from the libgit2 and Mbed TLS source snapshots
+vendored in this repository, by:
+
+    tools/libgit2-native-tools/android/build.py --arch arm64
+
+with the Android NDK, inside the codebrix-libgit2-build-x86_64 tool image with
+the network DISABLED and the NDK mounted read-only. Nothing was downloaded. It
+was built three times from scratch on 2026-10-17 with byte-identical results,
+stripped and unstripped.
+
+libgit2 version   : 1.8.6, commit 5853918c4c6a7b12f8becf4bd11ff4362ebb9020
+Mbed TLS          : 3.6.7 (tag v3.6.7, commit
+                    068ff080b369adfac81509f9b57b2afabaf82dc5), built first as
+                    static libmbedtls.a / libmbedx509.a / libmbedcrypto.a and
+                    linked in
+Sources           : tools/libgit2-native-tools/libgit2/ and .../mbedtls/
+                    (unmodified; see tools/libgit2-native-tools/UPSTREAM.txt)
+Patches applied   : none
+
+Built             : 2026-10-17 15:18:18 UTC (third, final run)
+Build host        : Dell Precision 7770 laptop, LMDE 7, x86_64, podman 5.4.2
+Network           : DISABLED during this build (interfaces: lo)
+NDK               : 30.0.16248370 (r30)
+Compiler          : Android (16134705, +pgo, +bolt, +lto, +mlgo, based on
+                    r574158c) clang version 21.0.0
+cmake / ninja     : cmake version 4.4.3 / 1.13.2.git.kitware.jobserver-pipe-1
+API floor         : 33 (ANDROID_PLATFORM=33)
+Mbed TLS options  : -DENABLE_TESTING=OFF -DENABLE_PROGRAMS=OFF
+                    -DUSE_STATIC_MBEDTLS_LIBRARY=ON
+                    -DUSE_SHARED_MBEDTLS_LIBRARY=OFF -DGEN_FILES=OFF
+                    (+ toolchain, ABI, API 33, Release, PIC); default config
+libgit2 options   : -DBUILD_SHARED_LIBS=ON -DBUILD_TESTS=OFF -DBUILD_CLI=OFF
+                    -DLIBGIT2_FILENAME=git2-5853918 -DUSE_SSH=OFF
+                    -DUSE_HTTPS=mbedTLS -DUSE_BUNDLED_ZLIB=ON
+                    -DREGEX_BACKEND=builtin
+                    -DCERT_LOCATION=/system/etc/security/cacerts
+                    -DMBEDTLS_INCLUDE_DIR/_LIBRARY/X509_LIBRARY/CRYPTO_LIBRARY
+                    = the static Mbed TLS above
+C flags           : -g -ffile-prefix-map=... -fdebug-compilation-dir=build;
+                    libgit2 also -fgnu-keywords (libgit2's strict C90 vs the
+                    NDK headers' `inline` - see android/README.txt)
+Link flags        : -Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384
+                    -Wl,--build-id=sha1 -Wl,--exclude-libs,ALL
+                    then llvm-strip --strip-unneeded
+
+Features (libgit2's CMake summary):
+                    nanoseconds, CERT_LOCATION /system/etc/security/cacerts,
+                    HTTPS using mbedTLS, SHA1 using CollisionDetection, SHA256
+                    using mbedTLS, http-parser bundled, regex bundled PCRE,
+                    xdiff bundled, zlib bundled, futimens, threadsafe,
+                    ntlmclient; SSH DISABLED (no `ssh` executable on Android)
+git_libgit2_features(): 11 = THREADS | HTTPS | NSEC (read from the shipped
+                    machine code, and returned by the emulator run below)
+
+Architecture      : ELF64, AArch64
+Android API note  : 33 (NDK note r30 / 16248370)
+PT_LOAD alignment : 16384 16384 16384 16384 (16 KB pages)
+SONAME            : libgit2-5853918.so
+Dynamic deps      : libm.so libdl.so libc.so - nothing else; no libz.so,
+                    no libc++_shared.so
+Exports           : 944 (940 git_*) - no mbedtls_ / psa_ symbol
+                    exported or imported (Mbed TLS kept private)
+Mbed TLS inside   : 713 mbedtls_* and 73 psa_* functions in the
+                    unstripped twin's symbol table; everest / p256-m not linked
+Build-id (sha1)   : f269df3147ab348bde8e15563c4f8d4490e5a278
+
+Output SHA-256    : 671915d969264bfb7a7254611a6f779a272c843e4ea0caa0a220468512a61257
+Output size       : 2139752 bytes
+Unstripped SHA-256: 199e11da3ba311c3adfa8fbc3852b7528e0e2d93eef48df592e28beb1b8e8239
+Unstripped size   : 11862872 bytes
+                    (stored in tools/libgit2-native-tools/unstripped/android-arm64/)
+
+Gate (static)     : verify.py on the stripped file, its twin and
+                    git2_features.h - ELF/machine, API 33, 16 KB PT_LOAD, no
+                    W+X, SONAME, NEEDED system-only, no GLIBC_, no
+                    TEXTREL/RPATH/RUNPATH, 20 required exports, Mbed TLS
+                    private, features 11, build-ids match, required Mbed TLS
+                    functions defined, feature defines - PASSED
+Run (emulator)    : 2026-10-17, API 35 x86_64 Google APIs emulator
+                    (sdk_gphone64_x86_64, AE3A.240806.043), through the
+                    image's ARM translation (libndk_translation):
+                    linux/smoke-test.c - version 1.8.6, features 11, init,
+                    blob hash, repository init/write/open in /data/local/tmp,
+                    GIT_OPT_SET_SSL_CERT_LOCATIONS on
+                    /system/etc/security/cacerts (Mbed TLS parsed the device
+                    store), shutdown - PASSED. No network operation was tried.
+
+Vendored on       : 2026-10-17
+
+LICENCE FILES BESIDE THIS ONE (all packed into runtimes/android-arm64/native/):
+  LICENSE-Libgit2.txt  libgit2's COPYING, verbatim: GPLv2 WITH the libgit2
+                       linking exception, plus the licences of the bundled
+                       zlib, PCRE2, llhttp, ntlmclient, SHA-1 collision
+                       detection, wildmatch and others, and the LGPL-2.1 text
+  LICENSE-Xdiff.txt    the bundled xdiff's own notices (LGPL-2.1-or-later;
+                       xhistogram.c under the Eclipse Distribution License),
+                       verbatim from libgit2/deps/xdiff/ headers
+  LICENSE-MbedTls.txt  Mbed TLS 3.6.7's LICENSE (Apache-2.0 OR
+                       GPL-2.0-or-later; taken under Apache-2.0) - Mbed TLS is
+                       statically linked into this library
+See THIRD-PARTY-NOTICES.txt in the repository root.

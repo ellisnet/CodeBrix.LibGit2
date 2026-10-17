@@ -1,0 +1,7 @@
+# The folders below are test fixture repositories (their .git folders are
+# stored as dot_git). Every file in them is fixture data and must be tracked,
+# including names the repository-root .gitignore (the standard Visual Studio
+# one) would otherwise hide, such as dot_git/logs/. A nested .gitignore takes
+# precedence over the ones above it, so this file re-includes everything here.
+!*
+!*/

@@ -1,0 +1,76 @@
+{
+  "ndk": "30.0.16248370",
+  "api": 33,
+  "cmake_minimum": "3.5.1",
+  "ninja_minimum": "1.10",
+  "libgit2_commit": "5853918c4c6a7b12f8becf4bd11ff4362ebb9020",
+  "libgit2_version": "1.8.6",
+  "libgit2_filename": "git2-5853918",
+  "library": "libgit2-5853918.so",
+  "soname": "libgit2-5853918.so",
+  "mbedtls_tag": "v3.6.7",
+  "mbedtls_commit": "068ff080b369adfac81509f9b57b2afabaf82dc5",
+  "mbedtls_version": "3.6.7",
+  "cert_location": "/system/etc/security/cacerts",
+  "abis": {
+    "arm64": "arm64-v8a",
+    "x64": "x86_64"
+  },
+  "expected_features": 11,
+  "allowed_needed": [
+    "libc.so",
+    "libm.so",
+    "libdl.so",
+    "liblog.so"
+  ],
+  "required_exports": [
+    "git_libgit2_version",
+    "git_libgit2_features",
+    "git_libgit2_init",
+    "git_libgit2_shutdown",
+    "git_libgit2_opts",
+    "git_error_last",
+    "git_repository_open",
+    "git_repository_init",
+    "git_repository_free",
+    "git_clone",
+    "git_remote_connect",
+    "git_remote_fetch",
+    "git_remote_push",
+    "git_commit_create",
+    "git_index_add_bypath",
+    "git_diff_tree_to_tree",
+    "git_odb_hash",
+    "git_oid_tostr_s",
+    "git_blob_create_from_buffer",
+    "git_status_list_new"
+  ],
+  "required_mbedtls_symbols": [
+    "mbedtls_ssl_handshake",
+    "mbedtls_ssl_config_defaults",
+    "mbedtls_x509_crt_parse_file",
+    "mbedtls_x509_crt_parse_path",
+    "mbedtls_ctr_drbg_seed",
+    "mbedtls_entropy_func",
+    "mbedtls_strerror",
+    "mbedtls_sha256_starts",
+    "mbedtls_des_crypt_ecb",
+    "mbedtls_md_hmac_starts"
+  ],
+  "required_features_defines": [
+    "GIT_THREADS",
+    "GIT_HTTPS",
+    "GIT_MBEDTLS",
+    "GIT_SHA1_COLLISIONDETECT",
+    "GIT_SHA256_MBEDTLS",
+    "GIT_USE_NSEC",
+    "GIT_NTLM",
+    "GIT_HTTPPARSER_BUILTIN",
+    "GIT_REGEX_BUILTIN"
+  ],
+  "forbidden_features_defines": [
+    "GIT_SSH",
+    "GIT_OPENSSL",
+    "GIT_OPENSSL_DYNAMIC"
+  ]
+}

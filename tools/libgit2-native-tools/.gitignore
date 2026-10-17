@@ -1,0 +1,62 @@
+# ==============================================================================
+# tools/libgit2-native-tools/.gitignore
+# ==============================================================================
+#
+# THE FIRST RULE BELOW ("!*") IS LOAD-BEARING - DO NOT DELETE IT.
+#
+# The repository-root .gitignore is the standard Visual Studio / .NET one. It
+# ignores names that also occur inside the vendored libgit2 and Mbed TLS
+# trees and in this folder's own scripts, for example:
+#
+#     *.env                     -> linux/pins.env
+#     [Dd]ebug/  [Rr]elease/  [Oo]ut/  [Ll]og/  bld/  [Oo]bj/ ...
+#     [Aa][Rr][Mm]64/  *.obj  *.pdb  ...
+#
+# Without the "!*" below, such files would be silently left out of every
+# commit, and the vendored snapshots (or the build pins) would not be there
+# for the next person who cloned this repository. A nested .gitignore takes
+# precedence over the ones above it, so re-including everything here and then
+# re-ignoring only what this folder genuinely produces is the correct fix - and
+# it keeps the root .gitignore untouched. (Same rule, same reason, as
+# CodeBrix.Sdl3's sdl3-native-tools/.gitignore.)
+#
+# libgit2/.gitignore, libgit2/tests/resources/**/.gitignore and
+# mbedtls/**/.gitignore are UPSTREAM's own files and part of the unmodified
+# snapshots. They are deeper than this one, so they still apply inside their
+# trees - which is correct: they only name build products, and for both
+# pinned commits `git ls-files -ci --exclude-standard` upstream lists NOTHING,
+# so no upstream-tracked file is hidden by them (see ../UPSTREAM.txt).
+#
+# Verify at any time with:
+#     git status --ignored --porcelain -- tools/libgit2-native-tools
+#         -> should list only output/ contents (and nothing at all on a clean
+#            clone)
+# ==============================================================================
+
+# Re-include everything under this folder, overriding the root .gitignore.
+!*
+!*/
+
+# --- what this folder really does produce, and must not commit ---------------
+
+# Built native libraries, unstripped copies, smoke-test binaries, SHA256SUMS,
+# build scratch. ONE tree, shared by every platform build.
+#
+# THE LEADING SLASH MATTERS: without it the pattern would match ANY directory
+# named "output" at any depth, including inside the vendored trees.
+# NOTE THE TRAILING /* RATHER THAN A BARE /output/: a directory that is itself
+# excluded is never descended into, so the "!" rule below could never
+# re-include the README inside it.
+/output/*
+
+# ...except the placeholder README that explains what goes there.
+!/output/README.txt
+
+# Python's bytecode cache, written next to android/verify.py whenever
+# android/build.py imports it.
+__pycache__/
+
+# Finder droppings. Needed explicitly: the "!*" above re-includes everything
+# under this folder and so overrides any .DS_Store rule inherited from the root
+# or from a user's global gitignore.
+.DS_Store

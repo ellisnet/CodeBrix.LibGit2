@@ -1,0 +1,126 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>CodeBrix.LibGit2</AssemblyName>
+    <RootNamespace>CodeBrix.LibGit2</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsTrimmable>true</IsTrimmable>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+  </PropertyGroup>
+
+  <!--
+    Package / assembly version: date-stamped and auto-incrementing.
+
+    Format:  1.<x>.<y>.<z>   (every field is derived from UTC "now")
+
+      1  (major)     Always 1 for this library.
+      x  (minor)     Whole years since $(_VersionBaseYear).
+                     With base 2026: 2026=0, 2027=1, 2028=2, ...
+      y  (build)     Day of year, 1-based inclusive, UTC.
+                     Jan 1 = 1, Feb 1 = 32, Dec 31 = 365 (366 in a leap year).
+      z  (revision)  Minute of day, UTC, range 0 to 1439.
+                     00:00 = 0, 23:59 = 1439.
+
+    The version is always strictly increasing over time:
+      * within a day, z grows;
+      * at a day boundary, y increments and outranks z resetting to 0;
+      * at a (UTC) year boundary, x increments and outranks y and z resetting.
+
+    Notes / caveats:
+      * All fields read from System.DateTime.UtcNow, so a local dev build and a
+        UTC CI build agree on the value. Math.Floor on the minutes keeps z in
+        0..1439 (plain rounding could land on 1440 late in the day).
+      * Because the value depends on the clock, every build produces a NEW
+        version. With GeneratePackageOnBuild=true that means a fresh .nupkg on
+        each build, and two builds in the SAME UTC minute produce the SAME
+        version (so do not publish two packages from within one minute).
+      * This is date-stamp versioning, not SemVer: minor encodes the year and
+        major is pinned to 1, so major/minor do not signal API compatibility.
+      * To re-baseline the minor number, change _VersionBaseYear below.
+  -->
+  <PropertyGroup>
+    <_VersionBaseYear>2026</_VersionBaseYear>
+    <_VersionYears>$([MSBuild]::Subtract($([System.DateTime]::UtcNow.Year), $(_VersionBaseYear)))</_VersionYears>
+    <_VersionDayOfYear>$([System.DateTime]::UtcNow.DayOfYear)</_VersionDayOfYear>
+    <_VersionMinuteOfDay>$([System.Convert]::ToInt32($([System.Math]::Floor($([System.DateTime]::UtcNow.TimeOfDay.TotalMinutes)))))</_VersionMinuteOfDay>
+    <BuildVersion>1.$(_VersionYears).$(_VersionDayOfYear).$(_VersionMinuteOfDay)</BuildVersion>
+    <Version>$(BuildVersion)</Version>
+    <AssemblyVersion>$(BuildVersion)</AssemblyVersion>
+    <FileVersion>$(BuildVersion)</FileVersion>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageId>CodeBrix.LibGit2.MitLicenseForever</PackageId>
+    <Product>CodeBrix.LibGit2</Product>
+    <Title>CodeBrix.LibGit2</Title>
+    <Authors>Jeremy Ellis</Authors>
+    <Description>A managed .NET wrapper around the libgit2 native Git library, with the native libraries for Windows, macOS, Linux and Android included in the package. Open, clone, commit, branch, merge, rebase, diff, blame, fetch and push Git repositories from C# with no external Git installation.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/ellisnet/CodeBrix.LibGit2</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/ellisnet/CodeBrix.LibGit2</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageIcon>icon-codebrix-128.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Copyright>Copyright (c) LibGit2Sharp contributors. Copyright (c) 2026 Jeremy Ellis and contributors.</Copyright>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <IsPackable>true</IsPackable>
+    <PackageTags>git;libgit2;version-control;repository;clone;commit;CodeBrix</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\icon-codebrix-128.png" Pack="true" PackagePath="" />
+    <None Include="..\..\README.md" Pack="true" PackagePath="" />
+    <None Include="..\..\AGENT-README.txt" Pack="true" PackagePath="" />
+    <None Include="..\..\THIRD-PARTY-NOTICES.txt" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <!--
+    libgit2 native binaries, committed under native_libraries/<rid>/ and packed into the
+    RID-specific folders the .NET host probes at run time. Nothing is downloaded or built during
+    a dotnet build. Each binary has a .provenance.txt beside it (NOT packed) recording where it
+    came from; the build recipes for every RID live in tools/libgit2-native-tools/ (see
+    BUILD-PROVENANCE.txt there). LICENSE-Libgit2.txt and LICENSE-Xdiff.txt travel beside every binary, and
+    LICENSE-MbedTls.txt beside the two Android binaries (mbedTLS is statically linked there).
+
+    Each item is conditional on the binary existing so the project builds while natives are
+    still being produced; a release package must carry all of them.
+
+    Forward slashes with NO trailing separator in PackagePath: NuGet matches RID-specific assets
+    on the exact "runtimes/{rid}/native/{file}" shape.
+  -->
+  <ItemGroup>
+    <None Include="..\..\native_libraries\win-x64\git2-5853918.dll" Pack="true" PackagePath="runtimes/win-x64/native" Visible="false" Condition="Exists('..\..\native_libraries\win-x64\git2-5853918.dll')" />
+    <None Include="..\..\native_libraries\win-x64\LICENSE-Libgit2.txt" Pack="true" PackagePath="runtimes/win-x64/native" Visible="false" Condition="Exists('..\..\native_libraries\win-x64\git2-5853918.dll')" />
+    <None Include="..\..\native_libraries\win-x64\LICENSE-Xdiff.txt" Pack="true" PackagePath="runtimes/win-x64/native" Visible="false" Condition="Exists('..\..\native_libraries\win-x64\git2-5853918.dll')" />
+    <None Include="..\..\native_libraries\win-arm64\git2-5853918.dll" Pack="true" PackagePath="runtimes/win-arm64/native" Visible="false" Condition="Exists('..\..\native_libraries\win-arm64\git2-5853918.dll')" />
+    <None Include="..\..\native_libraries\win-arm64\LICENSE-Libgit2.txt" Pack="true" PackagePath="runtimes/win-arm64/native" Visible="false" Condition="Exists('..\..\native_libraries\win-arm64\git2-5853918.dll')" />
+    <None Include="..\..\native_libraries\win-arm64\LICENSE-Xdiff.txt" Pack="true" PackagePath="runtimes/win-arm64/native" Visible="false" Condition="Exists('..\..\native_libraries\win-arm64\git2-5853918.dll')" />
+    <None Include="..\..\native_libraries\osx-x64\libgit2-5853918.dylib" Pack="true" PackagePath="runtimes/osx-x64/native" Visible="false" Condition="Exists('..\..\native_libraries\osx-x64\libgit2-5853918.dylib')" />
+    <None Include="..\..\native_libraries\osx-x64\LICENSE-Libgit2.txt" Pack="true" PackagePath="runtimes/osx-x64/native" Visible="false" Condition="Exists('..\..\native_libraries\osx-x64\libgit2-5853918.dylib')" />
+    <None Include="..\..\native_libraries\osx-x64\LICENSE-Xdiff.txt" Pack="true" PackagePath="runtimes/osx-x64/native" Visible="false" Condition="Exists('..\..\native_libraries\osx-x64\libgit2-5853918.dylib')" />
+    <None Include="..\..\native_libraries\osx-arm64\libgit2-5853918.dylib" Pack="true" PackagePath="runtimes/osx-arm64/native" Visible="false" Condition="Exists('..\..\native_libraries\osx-arm64\libgit2-5853918.dylib')" />
+    <None Include="..\..\native_libraries\osx-arm64\LICENSE-Libgit2.txt" Pack="true" PackagePath="runtimes/osx-arm64/native" Visible="false" Condition="Exists('..\..\native_libraries\osx-arm64\libgit2-5853918.dylib')" />
+    <None Include="..\..\native_libraries\osx-arm64\LICENSE-Xdiff.txt" Pack="true" PackagePath="runtimes/osx-arm64/native" Visible="false" Condition="Exists('..\..\native_libraries\osx-arm64\libgit2-5853918.dylib')" />
+    <None Include="..\..\native_libraries\linux-x64\libgit2-5853918.so" Pack="true" PackagePath="runtimes/linux-x64/native" Visible="false" Condition="Exists('..\..\native_libraries\linux-x64\libgit2-5853918.so')" />
+    <None Include="..\..\native_libraries\linux-x64\LICENSE-Libgit2.txt" Pack="true" PackagePath="runtimes/linux-x64/native" Visible="false" Condition="Exists('..\..\native_libraries\linux-x64\libgit2-5853918.so')" />
+    <None Include="..\..\native_libraries\linux-x64\LICENSE-Xdiff.txt" Pack="true" PackagePath="runtimes/linux-x64/native" Visible="false" Condition="Exists('..\..\native_libraries\linux-x64\libgit2-5853918.so')" />
+    <None Include="..\..\native_libraries\linux-arm64\libgit2-5853918.so" Pack="true" PackagePath="runtimes/linux-arm64/native" Visible="false" Condition="Exists('..\..\native_libraries\linux-arm64\libgit2-5853918.so')" />
+    <None Include="..\..\native_libraries\linux-arm64\LICENSE-Libgit2.txt" Pack="true" PackagePath="runtimes/linux-arm64/native" Visible="false" Condition="Exists('..\..\native_libraries\linux-arm64\libgit2-5853918.so')" />
+    <None Include="..\..\native_libraries\linux-arm64\LICENSE-Xdiff.txt" Pack="true" PackagePath="runtimes/linux-arm64/native" Visible="false" Condition="Exists('..\..\native_libraries\linux-arm64\libgit2-5853918.so')" />
+    <None Include="..\..\native_libraries\linux-riscv64\libgit2-5853918.so" Pack="true" PackagePath="runtimes/linux-riscv64/native" Visible="false" Condition="Exists('..\..\native_libraries\linux-riscv64\libgit2-5853918.so')" />
+    <None Include="..\..\native_libraries\linux-riscv64\LICENSE-Libgit2.txt" Pack="true" PackagePath="runtimes/linux-riscv64/native" Visible="false" Condition="Exists('..\..\native_libraries\linux-riscv64\libgit2-5853918.so')" />
+    <None Include="..\..\native_libraries\linux-riscv64\LICENSE-Xdiff.txt" Pack="true" PackagePath="runtimes/linux-riscv64/native" Visible="false" Condition="Exists('..\..\native_libraries\linux-riscv64\libgit2-5853918.so')" />
+    <None Include="..\..\native_libraries\android-arm64\libgit2-5853918.so" Pack="true" PackagePath="runtimes/android-arm64/native" Visible="false" Condition="Exists('..\..\native_libraries\android-arm64\libgit2-5853918.so')" />
+    <None Include="..\..\native_libraries\android-arm64\LICENSE-Libgit2.txt" Pack="true" PackagePath="runtimes/android-arm64/native" Visible="false" Condition="Exists('..\..\native_libraries\android-arm64\libgit2-5853918.so')" />
+    <None Include="..\..\native_libraries\android-arm64\LICENSE-Xdiff.txt" Pack="true" PackagePath="runtimes/android-arm64/native" Visible="false" Condition="Exists('..\..\native_libraries\android-arm64\libgit2-5853918.so')" />
+    <None Include="..\..\native_libraries\android-arm64\LICENSE-MbedTls.txt" Pack="true" PackagePath="runtimes/android-arm64/native" Visible="false" Condition="Exists('..\..\native_libraries\android-arm64\libgit2-5853918.so')" />
+    <None Include="..\..\native_libraries\android-x64\libgit2-5853918.so" Pack="true" PackagePath="runtimes/android-x64/native" Visible="false" Condition="Exists('..\..\native_libraries\android-x64\libgit2-5853918.so')" />
+    <None Include="..\..\native_libraries\android-x64\LICENSE-Libgit2.txt" Pack="true" PackagePath="runtimes/android-x64/native" Visible="false" Condition="Exists('..\..\native_libraries\android-x64\libgit2-5853918.so')" />
+    <None Include="..\..\native_libraries\android-x64\LICENSE-Xdiff.txt" Pack="true" PackagePath="runtimes/android-x64/native" Visible="false" Condition="Exists('..\..\native_libraries\android-x64\libgit2-5853918.so')" />
+    <None Include="..\..\native_libraries\android-x64\LICENSE-MbedTls.txt" Pack="true" PackagePath="runtimes/android-x64/native" Visible="false" Condition="Exists('..\..\native_libraries\android-x64\libgit2-5853918.so')" />
+  </ItemGroup>
+
+</Project>

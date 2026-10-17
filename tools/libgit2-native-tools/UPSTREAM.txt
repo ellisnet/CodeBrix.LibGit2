@@ -1,0 +1,219 @@
+================================================================================
+tools/libgit2-native-tools - WHERE EVERY VENDORED TREE CAME FROM
+================================================================================
+
+This folder vendors two upstream source trees and one set of upstream build
+files. None of them is ever edited. Nothing in any build script here clones,
+downloads or otherwise fetches source at build time - see README.txt for the
+rule this exists to satisfy. This file records, for each tree, its identity,
+its licence, exactly how the copy was made, and how to check it again.
+
+This file sits BESIDE the trees rather than inside them, so libgit2/ and
+mbedtls/ contain upstream's files and nothing else.
+
+
+================================================================================
+1. libgit2/ - libgit2 1.8.6
+================================================================================
+Project        : libgit2 - a portable, pure C implementation of the Git core
+                 methods
+Upstream URL   : https://github.com/libgit2/libgit2.git
+Snapshot commit: 5853918c4c6a7b12f8becf4bd11ff4362ebb9020
+git describe   : v1.8.6   (the commit IS the v1.8.6 tag; `git tag --points-at`
+                 lists v1.8.6)
+Commit subject : "v1.8.6: update version numbers"
+Author date    : 2026-06-09 21:33:41 +0100
+Commit date    : 2026-07-18 10:53:35 +0100
+Version header : include/git2/version.h: LIBGIT2_VERSION "1.8.6",
+                 LIBGIT2_SOVERSION "1.8"
+                 => git_libgit2_version() reports 1.8.6
+Why this commit: it is the commit upstream LibGit2Sharp.NativeBinaries 2.0.324
+                 pins (nuget.package/libgit2/libgit2_hash.txt, a copy of which
+                 is in reference-upstream/), so the managed wrapper ported from
+                 LibGit2Sharp, this source and every shipped binary describe
+                 one C API. The shipped file names keep its first seven hex
+                 digits: git2-5853918.
+Licence        : GPLv2 WITH the libgit2 linking exception - COPYING (in this
+                 tree), which also carries the licences of the bundled
+                 dependencies (zlib, PCRE2, llhttp, ntlmclient, SHA-1
+                 collision detection, wildmatch, winhttp definitions + the
+                 full LGPL-2.1 text, ...). Shipped beside every binary as
+                 LICENSE-Libgit2.txt. The bundled xdiff's own notices are NOT
+                 in COPYING; ../LICENSE-Xdiff.txt (this folder) carries them,
+                 verbatim from the file headers, and is shipped beside every
+                 binary too.
+
+What is in the tree: ALL of it - 11,877 entries (11,876 files and one symlink,
+tests/resources/testrepo-worktree/link_to_new.txt -> new.txt), equal to
+`git ls-files | wc -l` at the commit. That includes tests/ (9,846 files: the
+clar suite and its fixture repositories), so the Windows script's -test switch
+(BUILD_TESTS=ON + ctest) works from this copy, and deps/ with every bundled
+dependency: chromium-zlib, llhttp, ntlmclient, pcre2, winhttp, xdiff, zlib.
+libgit2 has no git submodules at this commit.
+
+How the copy was made, 2026-10-17 (the one-time vendoring step; the only
+network use besides the Mbed TLS clone and the one nuget.org download below):
+
+    git clone https://github.com/libgit2/libgit2.git \
+        ~/ClaudeHome/libgit2-upstream-scratch/libgit2
+    git -C ~/ClaudeHome/libgit2-upstream-scratch/libgit2 \
+        checkout 5853918c4c6a7b12f8becf4bd11ff4362ebb9020
+    rsync -a --exclude=/.git \
+        ~/ClaudeHome/libgit2-upstream-scratch/libgit2/ \
+        tools/libgit2-native-tools/libgit2/
+
+Afterwards `diff -r -q -x .git <clone> tools/libgit2-native-tools/libgit2`
+reported no differences.
+
+Tree checksum (run from inside libgit2/; symlinks hashed through their
+target):
+
+    find . \( -type f -o -type l \) | LC_ALL=C sort \
+        | xargs -d '\n' sha256sum | sha256sum
+
+    3845e8e3bde38d9882ba4001aea8314fd9baa5fb28e7a4184c6490b0b3fce58c  -
+
+The same command in the upstream clone (with `-path ./.git -prune`) gave the
+same value.
+
+NOTHING IN THE BUILD FETCHES. libgit2's CMake has one download path,
+deps/chromium-zlib/CMakeLists.txt (FetchContent of Chromium's zlib), and it is
+reached only with -DUSE_BUNDLED_ZLIB=Chromium. Every build here uses
+USE_BUNDLED_ZLIB=ON (= deps/zlib) on Linux, Android and macOS, and on Windows
+upstream's own default (no system zlib -> deps/zlib), so that code is never
+configured. The Linux and Android builds prove it on every run by building
+with no network interface.
+
+upstream's own .gitignore files (./.gitignore, tests/resources/.gitignore and
+six inside the tests/resources fixtures) are part of the
+snapshot. For this commit `git ls-files -ci --exclude-standard` lists NOTHING:
+no file upstream tracks is hidden by them, so a plain `git add` of this folder
+picks up the whole tree (../.gitignore re-includes what the repository-root
+.gitignore would otherwise hide - see its comment).
+
+
+================================================================================
+2. mbedtls/ - Mbed TLS 3.6.7 (LTS), with its framework/ submodule
+================================================================================
+Project        : Mbed TLS - TLS / X.509 / crypto library
+Upstream URL   : https://github.com/Mbed-TLS/mbedtls.git
+Release tag    : v3.6.7 (annotated tag da6a8c7b9b8e0c1e236deef2910642657db1a7ec;
+                 mbedtls-3.6.7 is a second tag on the same commit)
+Snapshot commit: 068ff080b369adfac81509f9b57b2afabaf82dc5
+Commit subject : "ChangeLog: Removed CVE-ID"
+Commit date    : 2026-07-01 12:03:41 +0100
+Version        : include/mbedtls/build_info.h: MBEDTLS_VERSION_STRING "3.6.7"
+Why this tag   : the newest tag of the 3.6 long-term-support branch on
+                 2026-10-17 (`git ls-remote --tags`: v3.6.0 ... v3.6.7; 3.6
+                 is the LTS line, and the one libgit2 1.8.6's
+                 src/libgit2/streams/mbedtls.c and util/hash/mbedtls.c are
+                 written against; 4.x moved the crypto APIs into
+                 TF-PSA-Crypto).
+Submodule      : framework/ = https://github.com/Mbed-TLS/mbedtls-framework
+                 at dde0c4a0e448a0552f18817dcea633bb851fd288 (2026-06-24), the
+                 commit v3.6.7 records. Vendored too, because a 3.6 checkout
+                 without it is incomplete (its CMake and scripts reference
+                 framework/).
+Licence        : Apache-2.0 OR GPL-2.0-or-later (dual; LICENSE in this tree,
+                 which also holds the full Apache-2.0 text). CodeBrix.LibGit2
+                 takes it under Apache-2.0. LICENSE is shipped beside the two
+                 Android binaries as LICENSE-MbedTls.txt.
+Used by        : the two Android builds ONLY (android/build.py), compiled first
+                 as STATIC libraries (libmbedtls.a, libmbedx509.a,
+                 libmbedcrypto.a) and linked into libgit2-5853918.so. The
+                 Linux builds use OpenSSL at run time, Windows Schannel, macOS
+                 SecureTransport - none of them touches this tree.
+Generated files: v3.6.7 is a release tag and carries its generated sources
+                 (library/error.c, version_features.c,
+                 ssl_debug_helpers_generated.c, psa_crypto_driver_wrappers*.
+                 ...), so the build runs with GEN_FILES=OFF and needs no
+                 Python or Perl.
+3rdparty/      : everest and p256-m are compiled as separate static libraries
+                 by Mbed TLS's CMake but are OFF in the default configuration
+                 (MBEDTLS_ECDH_VARIANT_EVEREST_ENABLED and
+                 MBEDTLS_PSA_P256M_DRIVER_ENABLED are commented out in
+                 include/mbedtls/mbedtls_config.h, which is used unmodified),
+                 are not linked, and android/verify.py records that none of
+                 their symbols is in the library.
+
+How the copy was made, 2026-10-17:
+
+    git clone --branch v3.6.7 https://github.com/Mbed-TLS/mbedtls.git \
+        ~/ClaudeHome/libgit2-upstream-scratch/mbedtls
+    git -C ~/ClaudeHome/libgit2-upstream-scratch/mbedtls \
+        submodule update --init
+    rsync -a --exclude=/.git --exclude=/framework/.git \
+        ~/ClaudeHome/libgit2-upstream-scratch/mbedtls/ \
+        tools/libgit2-native-tools/mbedtls/
+
+2,039 files (948 from the main tree - `git ls-files` minus the framework
+gitlink - and 1,091 from framework/). `diff -r -q -x .git` against the clone
+reported no differences, and `git ls-files -ci --exclude-standard` is empty in
+both repositories.
+
+Tree checksum (same command as for libgit2, from inside mbedtls/):
+
+    379048efdb7cca7641f8bb2e247cfb9c424f45151feac6e078ff741daf914f3e  -
+
+
+================================================================================
+3. reference-upstream/ - how upstream built 2.0.324, kept as a record
+================================================================================
+Project        : LibGit2Sharp.NativeBinaries
+Upstream URL   : https://github.com/libgit2/libgit2sharp.nativebinaries
+Commit         : 2b95030f15e55dfe70e9fdbb2b3d304a5c95ad23 (2026-07-20) - the
+                 commit the 2.0.324 nuspec's <repository commit=...> names
+Licence        : MIT, Copyright (c) LibGit2Sharp contributors (LICENSE.md
+                 upstream)
+Copied from    : the read-only clone ~/GitHome/libgit2sharp.nativebinaries,
+                 verbatim (cp -p), 2026-10-17. See reference-upstream/README.txt
+                 for the file list and hashes. NOT used by any script here.
+
+
+================================================================================
+4. The adopted binaries - LibGit2Sharp.NativeBinaries 2.0.324 (nuget.org)
+================================================================================
+Downloaded ONCE, 2026-10-17, to ~/ClaudeHome/libgit2-upstream-scratch/nupkg/:
+
+    https://api.nuget.org/v3-flatcontainer/libgit2sharp.nativebinaries/2.0.324/
+        libgit2sharp.nativebinaries.2.0.324.nupkg
+
+    size    10,352,503 bytes
+    sha256  c7bb0ed883dc0ed630da41a05f8d97cc5f6d73a6e7d50db3a27d5443bca6bf7e
+    sha512  EtQYAupc1Qa696Dx5ENlvf+rPmZOPWhmxmwFeKWv4zUHtYG4meL/zJTGkoQ538Qr
+            iNZv2hYpmBNNRw/o4s2gHg== (base64)
+    `dotnet nuget verify --all`: exit 0 - nuget.org repository signature
+            (CN=NuGet.org Repository by Microsoft) valid
+
+Its runtimes/{win-x64,win-arm64,osx-x64,osx-arm64}/native/* are the files in
+../../native_libraries/<rid>/ for those four RIDs; BUILD-PROVENANCE.txt has
+each file's hash and static facts. Its linux-x64 and linux-arm64 files were
+extracted to the scratch folder for the comparison recorded there, and are
+NOT shipped. Its libgit2/libgit2.license.txt is byte-identical to libgit2's
+COPYING.
+
+
+================================================================================
+NOT MODIFIED
+================================================================================
+No file in libgit2/, mbedtls/ or reference-upstream/ has been modified,
+renamed, reformatted or deleted, and none ever should be. There is no patch
+mechanism in this folder: if a build ever needed a change to upstream source,
+the rule is to stop and decide, not to patch quietly. (The two first-run
+problems of 2026-10-17 - the image's pcre-devel and the NDK headers' `inline`
+under libgit2's strict C90 - were both solved with build options; see
+BUILD-PROVENANCE.txt.)
+
+VERIFYING A SNAPSHOT AGAINST UPSTREAM (optional, needs network)
+--------------------------------------------------------------------------------
+    git clone https://github.com/libgit2/libgit2.git /tmp/lg2-verify
+    git -C /tmp/lg2-verify checkout 5853918c4c6a7b12f8becf4bd11ff4362ebb9020
+    diff -r -x .git /tmp/lg2-verify libgit2          # expect no differences
+
+    git clone --branch v3.6.7 \
+        https://github.com/Mbed-TLS/mbedtls.git /tmp/mb-verify
+    git -C /tmp/mb-verify submodule update --init
+    diff -r -x .git /tmp/mb-verify mbedtls           # expect no differences
+
+That check is a convenience for a human, not a build step.
+================================================================================

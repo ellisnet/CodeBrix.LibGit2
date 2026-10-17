@@ -1,0 +1,86 @@
+git2-5853918.dll -- Windows ARM64 (win-arm64)
+================================================================================
+ADOPTED FROM the LibGit2Sharp.NativeBinaries 2.0.324 NuGet package, not built
+here (yet).
+
+Ruling (PLAN_codebrix_libgit2_2026-10-17): the Windows and macOS binaries are
+adopted from LibGit2Sharp.NativeBinaries 2.0.324, which built them from the
+SAME libgit2 commit this repository vendors; the Linux and Android RIDs are
+built here. The script that rebuilds this RID from
+tools/libgit2-native-tools/libgit2/ is in this repository all the same, so it
+can be rebuilt without upstream.
+
+REBUILD: tools/libgit2-native-tools/windows/build.libgit2.ps1 -arm64
+         - written 2026-10-17, UNRUN
+
+Package           : LibGit2Sharp.NativeBinaries 2.0.324 (nuget.org)
+Package URL       : https://api.nuget.org/v3-flatcontainer/libgit2sharp.nativebinaries/
+                    2.0.324/libgit2sharp.nativebinaries.2.0.324.nupkg
+Package sha256    : c7bb0ed883dc0ed630da41a05f8d97cc5f6d73a6e7d50db3a27d5443bca6bf7e
+Package sha512    : EtQYAupc1Qa696Dx5ENlvf+rPmZOPWhmxmwFeKWv4zUHtYG4meL/zJTGkoQ538Qr
+                    iNZv2hYpmBNNRw/o4s2gHg== (base64)
+Package size      : 10352503 bytes
+Signature         : `dotnet nuget verify --all` exit 0 - nuget.org repository
+                    signature (CN=NuGet.org Repository by Microsoft)
+Downloaded        : 2026-10-17, ONCE, to ~/ClaudeHome/libgit2-upstream-scratch/
+Path in the nupkg : runtimes/win-arm64/native/git2-5853918.dll
+                    (the file here, the extracted file and the ZIP entry read
+                    straight out of the .nupkg have the same sha256)
+Upstream source   : libgit2sharp.nativebinaries commit 2b95030f15e5 (the
+                    nuspec's <repository commit=...>), libgit2 submodule at
+                    5853918c4c6a7b12f8becf4bd11ff4362ebb9020 (1.8.6)
+
+Output SHA-256    : 5bf69534d4fb36ea957f767c509f1529c542af2d9666b17046b9c0e893df9e6c
+Output size       : 1786880 bytes
+
+libgit2 version   : 1.8.6, commit 5853918c4c6a7b12f8becf4bd11ff4362ebb9020
+Upstream recipe   : build.libgit2.ps1 -arm64 on GitHub's windows-2022 runner
+                    (tools/libgit2-native-tools/reference-upstream/):
+                      cmake -A ARM64 -D USE_SSH=exec -D USE_HTTPS=Schannel
+                            -D BUILD_TESTS=OFF -D BUILD_CLI=OFF
+                            -D LIBGIT2_FILENAME=git2-5853918 ../..
+                      cmake --build . --config Release
+                    MSVC, libgit2's defaults: static CRT (/MT), /O2 /GL, /LTCG
+
+Architecture      : PE32+ DLL, machine 0xAA64 (ARM64); linker 14.44 (the MSVC
+                    14.44 toolset); OS/subsystem 6.2 / 6.2; DllCharacteristics
+                    0x4160 (HIGH_ENTROPY_VA, DYNAMIC_BASE, NX_COMPAT, GUARD_CF)
+Link timestamp    : 2026-07-20 11:27:48 UTC
+Version resource  : FileVersion / ProductVersion 1.8.6, InternalName and
+                    OriginalFilename git2-5853918.dll, "libgit2 - the Git
+                    linkable library"
+Imports (DLLs)    : ADVAPI32.dll CRYPT32.dll KERNEL32.dll Secur32.dll WS2_32.dll
+                    - operating-system DLLs only. NO vcruntime / msvcp /
+                    ucrtbase / api-ms-win-crt-*: the C runtime is linked
+                    statically, so no Visual C++ Redistributable is needed.
+                    No winhttp.dll: HTTPS is Schannel (libgit2's own HTTP
+                    client over Windows TLS), not the WinHTTP backend.
+Exports           : 944 named exports - the identical name set to every other
+                    2.0.324 binary and to this repository's Linux and Android
+                    builds; all 20 REQUIRED_SYMBOLS of linux/pins.env present
+git_libgit2_features(): 15 = THREADS | HTTPS | SSH | NSEC (read from the
+                    function's machine code: mov w0, #0xf; ret)
+Debug info        : only a POGO debug-directory entry - no CodeView/PDB record;
+                    upstream published no .pdb; nothing in unstripped/
+Authenticode      : not signed (certificate table empty)
+
+Verified on Linux : the NDK's llvm-readobj / llvm-objdump (headers, imports,
+                    exports, debug directory, disassembly) and strings
+Not verified      : this file has NOT been executed on Windows by this
+                    repository - the smoke test runs as part of
+                    windows/build.libgit2.ps1's gate, which has not run yet.
+
+Vendored on       : 2026-10-17
+
+LICENCE FILES BESIDE THIS ONE (all packed into runtimes/win-arm64/native/):
+  LICENSE-Libgit2.txt  libgit2's COPYING, verbatim (byte-identical to the
+                       package's libgit2/libgit2.license.txt): GPLv2 WITH the
+                       libgit2 linking exception, plus the licences of the
+                       bundled zlib, PCRE2, llhttp, ntlmclient, SHA-1
+                       collision detection, wildmatch and others
+  LICENSE-Xdiff.txt    the bundled xdiff's own notices (LGPL-2.1-or-later;
+                       xhistogram.c under the Eclipse Distribution License),
+                       verbatim from libgit2/deps/xdiff/ headers
+Upstream's PACKAGING (LibGit2Sharp.NativeBinaries) is MIT, Copyright (c)
+LibGit2Sharp contributors; no LibGit2Sharp-authored code is in this binary.
+See THIRD-PARTY-NOTICES.txt in the repository root.
