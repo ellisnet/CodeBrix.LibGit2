@@ -1,6 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using CodeBrix.LibGit2.Handlers;
 using CodeBrix.LibGit2.Tests.TestHelpers;
 using Xunit;
 
@@ -290,6 +297,161 @@ public class NetworkTests : BaseFixture
             // but we do when asked by the user
             Commands.Fetch(repo, "pruner", Array.Empty<string>(), new FetchOptions { Prune = true }, null);
             Assert.Null(repo.Refs["refs/remotes/pruner/master"]);
+        }
+    }
+
+    [Fact]
+    public void list_references_from_remote_with_null_credentials_handler_connects_anonymously()
+    {
+        // Arrange
+        string remotePath = SandboxBareTestRepo();
+        string repoPath = InitNewRepository();
+
+        using (var repo = new Repository(repoPath))
+        {
+            Remote remote = repo.Network.Remotes.Add("origin", remotePath);
+            CredentialsHandler credentialsProvider = null;
+
+            // Act
+            IList<Reference> references = repo.Network.ListReferences(remote, credentialsProvider).ToList();
+
+            // Assert
+            AssertReferencesMatchRepository(remotePath, references);
+        }
+    }
+
+    [Fact]
+    public void list_references_from_remote_with_null_credentials_handler_and_proxy_options_connects_anonymously()
+    {
+        // Arrange
+        string remotePath = SandboxBareTestRepo();
+        string repoPath = InitNewRepository();
+
+        using (var repo = new Repository(repoPath))
+        {
+            Remote remote = repo.Network.Remotes.Add("origin", remotePath);
+            CredentialsHandler credentialsProvider = null;
+
+            // Act
+            IList<Reference> references = repo.Network.ListReferences(remote, credentialsProvider, new ProxyOptions()).ToList();
+
+            // Assert
+            AssertReferencesMatchRepository(remotePath, references);
+        }
+    }
+
+    [Fact]
+    public void list_references_from_url_with_null_credentials_handler_connects_anonymously()
+    {
+        // Arrange
+        string remotePath = SandboxBareTestRepo();
+        string url = new Uri(remotePath).AbsoluteUri;
+        string repoPath = InitNewRepository();
+
+        using (var repo = new Repository(repoPath))
+        {
+            CredentialsHandler credentialsProvider = null;
+
+            // Act
+            IList<Reference> references = repo.Network.ListReferences(url, credentialsProvider).ToList();
+
+            // Assert
+            AssertReferencesMatchRepository(remotePath, references);
+        }
+    }
+
+    [Fact]
+    public void list_references_from_url_with_null_credentials_handler_and_proxy_options_connects_anonymously()
+    {
+        // Arrange
+        string remotePath = SandboxBareTestRepo();
+        string url = new Uri(remotePath).AbsoluteUri;
+        string repoPath = InitNewRepository();
+
+        using (var repo = new Repository(repoPath))
+        {
+            CredentialsHandler credentialsProvider = null;
+
+            // Act
+            IList<Reference> references = repo.Network.ListReferences(url, credentialsProvider, new ProxyOptions()).ToList();
+
+            // Assert
+            AssertReferencesMatchRepository(remotePath, references);
+        }
+    }
+
+    [Fact]
+    public async Task list_references_from_url_with_credentials_handler_forwards_proxy_options()
+    {
+        // Arrange: a loopback listener stands in for the git server; it records the first request
+        // line it receives and drops the connection. Nothing leaves the machine. For a plain
+        // http:// url libgit2 sends a request through a proxy in absolute form
+        // ("GET http://host:port/path HTTP/1.1") and without one in origin form ("GET /path ..."),
+        // so the request line shows whether the caller's ProxyOptions reached libgit2. (libgit2
+        // only opens a connection to the proxy itself for https:// urls, so the unreachable proxy
+        // url below is never dialled.)
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        var serverListener = new TcpListener(IPAddress.Loopback, 0);
+        serverListener.Start();
+
+        try
+        {
+            int serverPort = ((IPEndPoint)serverListener.LocalEndpoint).Port;
+            string url = $"http://127.0.0.1:{serverPort}/repo.git";
+            var proxyOptions = new ProxyOptions
+            {
+                ProxyType = ProxyType.Specified,
+                Url = "http://127.0.0.1:1"
+            };
+            CredentialsHandler credentialsProvider = (_, _, _) => new DefaultCredentials();
+            Task<string> firstRequestLine = ReadFirstRequestLineAsync(serverListener, cancellationToken);
+            string repoPath = InitNewRepository();
+
+            using (var repo = new Repository(repoPath))
+            {
+                // Act
+                Assert.ThrowsAny<LibGit2SharpException>(
+                    () => repo.Network.ListReferences(url, credentialsProvider, proxyOptions).ToList());
+            }
+
+            string requestLine = await firstRequestLine.WaitAsync(TimeSpan.FromSeconds(30), cancellationToken);
+
+            // Assert
+            Assert.StartsWith($"GET http://127.0.0.1:{serverPort}/repo.git/info/refs", requestLine, StringComparison.Ordinal);
+        }
+        finally
+        {
+            serverListener.Stop();
+        }
+    }
+
+    private static async Task<string> ReadFirstRequestLineAsync(TcpListener listener, CancellationToken cancellationToken)
+    {
+        using (TcpClient client = await listener.AcceptTcpClientAsync(cancellationToken))
+        using (var reader = new StreamReader(client.GetStream(), Encoding.ASCII))
+        {
+            return await reader.ReadLineAsync(cancellationToken);
+        }
+    }
+
+    private static void AssertReferencesMatchRepository(string repositoryPath, IList<Reference> references)
+    {
+        Assert.NotEmpty(references);
+        Assert.True(references.Single(reference => reference.CanonicalName == "HEAD") is SymbolicReference);
+
+        using (var expectedRepo = new Repository(repositoryPath))
+        {
+            var expected = expectedRepo.Refs
+                .Select(reference => new Tuple<string, string>(reference.CanonicalName, reference.ResolveToDirectReference().TargetIdentifier))
+                .OrderBy(pair => pair.Item1, StringComparer.Ordinal)
+                .ToList();
+            var actual = references
+                .Where(reference => reference.CanonicalName != "HEAD" && !reference.CanonicalName.EndsWith("^{}", StringComparison.Ordinal))
+                .Select(reference => new Tuple<string, string>(reference.CanonicalName, reference.ResolveToDirectReference().TargetIdentifier))
+                .OrderBy(pair => pair.Item1, StringComparer.Ordinal)
+                .ToList();
+
+            Assert.Equal(expected, actual);
         }
     }
 }

@@ -122,7 +122,8 @@ Static members:
     string Repository.Discover(string startingPath)
         Walk upwards from startingPath; returns the .git path or null.
     IEnumerable<Reference> Repository.ListRemoteReferences(string url)
-        (+ overloads taking CredentialsHandler and/or ProxyOptions)
+        (+ overloads taking CredentialsHandler and/or ProxyOptions; a null
+         CredentialsHandler connects anonymously)
 
 Constructors:
     new Repository(string path)
@@ -369,7 +370,8 @@ Network - repo.Network
         RefSpec: Specification, Source, Destination, Direction, ForceUpdate
     IEnumerable<Reference> ListReferences(Remote remote)
     IEnumerable<Reference> ListReferences(string url)
-        (+ CredentialsHandler / ProxyOptions overloads)
+        (+ CredentialsHandler / ProxyOptions overloads; a null
+         CredentialsHandler connects anonymously)
     void Fetch(string url, IEnumerable<string> refspecs)
         (+ FetchOptions / logMessage overloads)
     void Push(Branch branch)

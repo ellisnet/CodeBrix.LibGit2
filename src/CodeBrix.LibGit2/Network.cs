@@ -84,12 +84,12 @@ public class Network
     /// </para>
     /// </summary>
     /// <param name="remote">The <see cref="Remote"/> to list from.</param>
-    /// <param name="credentialsProvider">The <see cref="Func{Credentials}"/> used to connect to remote repository.</param>
+    /// <param name="credentialsProvider">The <see cref="Func{Credentials}"/> used to connect to remote repository; <c>null</c> connects anonymously, as FetchOptions.CredentialsProvider = null does.</param>
     /// <returns>The references in the <see cref="Remote"/> repository.</returns>
     public virtual IEnumerable<Reference> ListReferences(Remote remote, CredentialsHandler credentialsProvider)
     {
         Ensure.ArgumentNotNull(remote, "remote");
-        Ensure.ArgumentNotNull(credentialsProvider, "credentialsProvider");
+        //was previously: Ensure.ArgumentNotNull(credentialsProvider, "credentialsProvider"); - upstream threw ArgumentNullException for a null handler
 
         return ListReferencesInternal(remote.Url, credentialsProvider, new ProxyOptions());
     }
@@ -104,13 +104,13 @@ public class Network
     /// </para>
     /// </summary>
     /// <param name="remote">The <see cref="Remote"/> to list from.</param>
-    /// <param name="credentialsProvider">The <see cref="Func{Credentials}"/> used to connect to remote repository.</param>
+    /// <param name="credentialsProvider">The <see cref="Func{Credentials}"/> used to connect to remote repository; <c>null</c> connects anonymously, as FetchOptions.CredentialsProvider = null does.</param>
     /// <param name="proxyOptions">Options for connecting through a proxy.</param>
     /// <returns>The references in the <see cref="Remote"/> repository.</returns>
     public virtual IEnumerable<Reference> ListReferences(Remote remote, CredentialsHandler credentialsProvider, ProxyOptions proxyOptions)
     {
         Ensure.ArgumentNotNull(remote, "remote");
-        Ensure.ArgumentNotNull(credentialsProvider, "credentialsProvider");
+        //was previously: Ensure.ArgumentNotNull(credentialsProvider, "credentialsProvider"); - upstream threw ArgumentNullException for a null handler
 
         return ListReferencesInternal(remote.Url, credentialsProvider, proxyOptions);
     }
@@ -162,12 +162,12 @@ public class Network
     /// </para>
     /// </summary>
     /// <param name="url">The url to list from.</param>
-    /// <param name="credentialsProvider">The <see cref="Func{Credentials}"/> used to connect to remote repository.</param>
+    /// <param name="credentialsProvider">The <see cref="Func{Credentials}"/> used to connect to remote repository; <c>null</c> connects anonymously, as FetchOptions.CredentialsProvider = null does.</param>
     /// <returns>The references in the remote repository.</returns>
     public virtual IEnumerable<Reference> ListReferences(string url, CredentialsHandler credentialsProvider)
     {
         Ensure.ArgumentNotNull(url, "url");
-        Ensure.ArgumentNotNull(credentialsProvider, "credentialsProvider");
+        //was previously: Ensure.ArgumentNotNull(credentialsProvider, "credentialsProvider"); - upstream threw ArgumentNullException for a null handler
 
         return ListReferencesInternal(url, credentialsProvider, new ProxyOptions());
     }
@@ -182,15 +182,15 @@ public class Network
     /// </para>
     /// </summary>
     /// <param name="url">The url to list from.</param>
-    /// <param name="credentialsProvider">The <see cref="Func{Credentials}"/> used to connect to remote repository.</param>
+    /// <param name="credentialsProvider">The <see cref="Func{Credentials}"/> used to connect to remote repository; <c>null</c> connects anonymously, as FetchOptions.CredentialsProvider = null does.</param>
     /// <param name="proxyOptions">Options for connecting through a proxy.</param>
     /// <returns>The references in the remote repository.</returns>
     public virtual IEnumerable<Reference> ListReferences(string url, CredentialsHandler credentialsProvider, ProxyOptions proxyOptions)
     {
         Ensure.ArgumentNotNull(url, "url");
-        Ensure.ArgumentNotNull(credentialsProvider, "credentialsProvider");
+        //was previously: Ensure.ArgumentNotNull(credentialsProvider, "credentialsProvider"); - upstream threw ArgumentNullException for a null handler
 
-        return ListReferencesInternal(url, credentialsProvider, new ProxyOptions());
+        return ListReferencesInternal(url, credentialsProvider, proxyOptions); //was previously: new ProxyOptions() - upstream ignored the caller's proxyOptions
     }
 
     private IEnumerable<Reference> ListReferencesInternal(string url, CredentialsHandler credentialsProvider, ProxyOptions proxyOptions)
@@ -458,7 +458,7 @@ public class Network
             var gitPushOptions = pushOptionsWrapper.Options;
             gitPushOptions.PackbuilderDegreeOfParallelism = pushOptions.PackbuilderDegreeOfParallelism;
             gitPushOptions.RemoteCallbacks = gitCallbacks;
-            gitPushOptions.ProxyOptions = pushOptions.ProxyOptions.CreateGitProxyOptions();
+            gitPushOptions.ProxyOptions = (pushOptions.ProxyOptions ?? new ProxyOptions()).CreateGitProxyOptions(); //was previously: pushOptions.ProxyOptions.CreateGitProxyOptions() - upstream threw NullReferenceException for PushOptions.ProxyOptions = null
 
             // If there are custom headers, create a managed string array.
             if (pushOptions.CustomHeaders != null && pushOptions.CustomHeaders.Length > 0)

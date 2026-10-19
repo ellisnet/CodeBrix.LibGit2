@@ -229,6 +229,19 @@ public class PushTests : BaseFixture
 
         Assert.Equal(sha, remoteHead.ResolveToDirectReference().TargetIdentifier);
     }
+    [Fact]
+    public void push_with_null_proxy_options_pushes_to_local_bare_remote()
+    {
+        // Arrange
+        var options = new PushOptions
+        {
+            OnPushStatusError = OnPushStatusError,
+            ProxyOptions = null
+        };
+
+        // Act + Assert: AssertPush checks the bare remote's master matches the new local commit
+        AssertPush(repo => repo.Network.Push(repo.Network.Remotes["origin"], new[] { "HEAD:refs/heads/master" }, options));
+    }
 
     private void UpdateTheRemoteRepositoryWithANewCommit(string remoteRepoPath)
     {
