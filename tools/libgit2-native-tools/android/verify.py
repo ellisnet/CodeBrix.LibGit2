@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
-"""Static gates for an Android libgit2-5853918.so (no device needed; nothing is loaded on the build host).
+"""Static gates for an Android libgit2-49e408b.so (no device needed; nothing is loaded on the build host).
 
-    python3 verify.py <libgit2-5853918.so> --arch arm64|x64 \
+    python3 verify.py <libgit2-49e408b.so> --arch arm64|x64 \
         --toolchain <NDK>/toolchains/llvm/prebuilt/<host>/bin [--unstripped <twin>] [--features-header <git2_features.h>]
 
 Checks: ELF64 little-endian shared object for the right machine; Android ABI note == the pinned API
 (33); every PT_LOAD aligned to >= 16 KB with offset/address congruent; no writable+executable segment;
-SONAME exactly libgit2-5853918.so; NEEDED only Android system libraries (pins.json "allowed_needed" -
+SONAME exactly libgit2-49e408b.so; NEEDED only Android system libraries (pins.json "allowed_needed" -
 libz.so in particular is NOT allowed, zlib is bundled); no GLIBC_ version requirement; no TEXTREL /
 RPATH / RUNPATH; the required git_* exports; NO mbedtls_ / psa_ symbol exported or imported (mbedTLS is
 linked in statically and kept private with --exclude-libs); the git_libgit2_features() bit mask read
-from the machine code of that function == pins.json "expected_features" (THREADS | HTTPS | NSEC = 11:
-the HTTPS bit proves the TLS backend was compiled in); a GNU build-id is present.
+from the machine code of that function == pins.json "expected_features" (1723 = THREADS | HTTPS | NSEC |
+HTTP_PARSER | REGEX | AUTH_NTLM | COMPRESSION | SHA1 - libgit2 1.9 widened git_feature_t; the HTTPS bit
+proves the TLS backend was compiled in, and SSH (4) must be absent); a GNU build-id is present.
 
 With --unstripped (build.py always passes it): the twin has the same build-id, and its symbol table
 DEFINES every pins.json "required_mbedtls_symbols" entry - the proof that mbedTLS itself, not just
@@ -34,7 +35,9 @@ TOOLS = Path(__file__).resolve().parents[1]
 PINS = json.loads((TOOLS / "android/pins.json").read_text())
 # arch -> (NDK triple cpu, ELF e_machine, Android ABI name)
 ARCHITECTURES = {"arm64": ("aarch64", 183, "arm64-v8a"), "x64": ("x86_64", 62, "x86_64")}
-FEATURE_NAMES = {1: "THREADS", 2: "HTTPS", 4: "SSH", 8: "NSEC"}
+# git_feature_t, include/git2/common.h (libgit2 1.9 added the bits from 16 up).
+FEATURE_NAMES = {1: "THREADS", 2: "HTTPS", 4: "SSH", 8: "NSEC", 16: "HTTP_PARSER", 32: "REGEX", 64: "I18N",
+                 128: "AUTH_NTLM", 256: "AUTH_NEGOTIATE", 512: "COMPRESSION", 1024: "SHA1", 2048: "SHA256"}
 
 
 def output(*args):

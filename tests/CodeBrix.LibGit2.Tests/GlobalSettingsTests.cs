@@ -58,17 +58,17 @@ public class GlobalSettingsTests : BaseFixture
         var extensions = GlobalSettings.GetExtensions();
 
         // Assert that "noop" is supported by default
-        Assert.Equal(new[] { "noop", "objectformat", "worktreeconfig" }, extensions);
+        Assert.Equal(new[] { "noop", "objectformat", "preciousobjects", "relativeworktrees", "worktreeconfig" }, extensions);
 
         // Disable "noop" extensions
         GlobalSettings.SetExtensions("!noop");
         extensions = GlobalSettings.GetExtensions();
-        Assert.Equal(new[] { "objectformat", "worktreeconfig" }, extensions);
+        Assert.Equal(new[] { "objectformat", "preciousobjects", "relativeworktrees", "worktreeconfig" }, extensions);
 
         // Enable two new extensions (it will reset the configuration and "noop" will be enabled)
         GlobalSettings.SetExtensions("partialclone", "newext");
         extensions = GlobalSettings.GetExtensions();
-        Assert.Equal(new[] { "newext", "noop", "objectformat", "partialclone", "worktreeconfig" }, extensions);
+        Assert.Equal(new[] { "newext", "noop", "objectformat", "partialclone", "preciousobjects", "relativeworktrees", "worktreeconfig" }, extensions);
     }
 
     [Fact]

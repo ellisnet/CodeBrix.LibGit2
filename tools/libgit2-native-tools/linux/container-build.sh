@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================================
-# container-build.sh - builds AND verifies libgit2-5853918.so INSIDE the build container
+# container-build.sh - builds AND verifies libgit2-49e408b.so INSIDE the build container
 # ==============================================================================================
 #
 # Do not run this on your workstation. build.sh runs it inside the derived image
@@ -154,10 +154,10 @@ echo "  compiler warnings: $WARNINGS"
 echo
 
 # ----------------------------------------------------------------------------------------------
-# 4. Collect. CMake produces libgit2-5853918.so.1.8.6 (the real file) plus the symlinks
-#    libgit2-5853918.so.1.8 and libgit2-5853918.so. The package ships ONE regular file named
-#    libgit2-5853918.so - the name upstream LibGit2Sharp.NativeBinaries ships and the managed
-#    wrapper loads. The SONAME stays inside the file, as built, and is recorded.
+# 4. Collect. CMake produces libgit2-49e408b.so.1.9.7 (the real file) plus the symlinks
+#    libgit2-49e408b.so.1.9 and libgit2-49e408b.so. The package ships ONE regular file named
+#    libgit2-49e408b.so - upstream LibGit2Sharp.NativeBinaries' naming scheme, and the name the
+#    managed wrapper loads. The SONAME stays inside the file, as built, and is recorded.
 # ----------------------------------------------------------------------------------------------
 BUILT_REAL="$(find "$BUILD" -maxdepth 1 -name "$LIB_NAME.*" -type f | sort | first_line)"
 [ -n "$BUILT_REAL" ] && [ -f "$BUILT_REAL" ] || { echo "ERROR: no $LIB_NAME.* regular file was produced in $BUILD" >&2; ls -la "$BUILD" >&2; exit 1; }
@@ -394,7 +394,7 @@ $SUMMARY
 
 Result
 ------------------------------------------------------------------------------
-File             : $LIB_NAME  (the name upstream LibGit2Sharp.NativeBinaries ships)
+File             : $LIB_NAME  (upstream LibGit2Sharp.NativeBinaries' naming scheme)
 Built as         : $(basename "$BUILT_REAL")
 SONAME           : $SONAME
 Build-id         : ${BUILD_ID:-none}

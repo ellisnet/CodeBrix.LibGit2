@@ -78,7 +78,7 @@ static int gen_proto(git_str *request, const char *cmd, git_net_url *url)
 
 	git_str_puts(request, cmd);
 	git_str_puts(request, " '");
-	git_str_puts(request, repo);
+	git_str_puts_escaped(request, repo, "'!", "'\\", "'");
 	git_str_puts(request, "'");
 
 	if (git_str_oom(request))
@@ -115,8 +115,8 @@ static int ssh_stream_read(
 	size_t buf_size,
 	size_t *bytes_read)
 {
-	ssize_t rc;
 	ssh_stream *s = GIT_CONTAINER_OF(stream, ssh_stream, parent);
+	ssize_t rc;
 
 	*bytes_read = 0;
 
@@ -142,7 +142,6 @@ static int ssh_stream_read(
 			return -1;
 		}
 	}
-
 
 	*bytes_read = rc;
 
@@ -367,7 +366,7 @@ static int _git_ssh_authenticate_session(
 		default:
 			rc = LIBSSH2_ERROR_AUTHENTICATION_FAILED;
 		}
-	} while (LIBSSH2_ERROR_EAGAIN == rc || LIBSSH2_ERROR_TIMEOUT == rc);
+	} while (LIBSSH2_ERROR_EAGAIN == rc);
 
 	if (rc == LIBSSH2_ERROR_PASSWORD_EXPIRED ||
 		rc == LIBSSH2_ERROR_AUTHENTICATION_FAILED ||
@@ -440,15 +439,21 @@ static int load_known_hosts(LIBSSH2_KNOWNHOSTS **hosts, LIBSSH2_SESSION *session
 
 	GIT_ASSERT_ARG(hosts);
 
-	if ((error = git_sysdir_expand_homedir_file(&sshdir, SSH_DIR)) < 0 ||
-	    (error = git_str_joinpath(&path, git_str_cstr(&sshdir), KNOWN_HOSTS_FILE)) < 0)
-		goto out;
-
 	if ((known_hosts = libssh2_knownhost_init(session)) == NULL) {
 		ssh_error(session, "error initializing known hosts");
 		error = -1;
 		goto out;
 	}
+
+	if ((error = git_sysdir_expand_homedir_file(&sshdir, SSH_DIR)) < 0) {
+		if (error == GIT_ENOTFOUND)
+			error = 0;
+
+		goto out;
+	}
+
+	if ((error = git_str_joinpath(&path, git_str_cstr(&sshdir), KNOWN_HOSTS_FILE)) < 0)
+		goto out;
 
 	/*
 	 * Try to read the file and consider not finding it as not trusting the
@@ -516,6 +521,8 @@ static void find_hostkey_preference(
 	add_hostkey_pref_if_avail(known_hosts, hostname, port, prefs, LIBSSH2_KNOWNHOST_KEY_ECDSA_384, "ecdsa-sha2-nistp384");
 	add_hostkey_pref_if_avail(known_hosts, hostname, port, prefs, LIBSSH2_KNOWNHOST_KEY_ECDSA_521, "ecdsa-sha2-nistp521");
 #endif
+	add_hostkey_pref_if_avail(known_hosts, hostname, port, prefs, LIBSSH2_KNOWNHOST_KEY_SSHRSA, "rsa-sha2-512");
+	add_hostkey_pref_if_avail(known_hosts, hostname, port, prefs, LIBSSH2_KNOWNHOST_KEY_SSHRSA, "rsa-sha2-256");
 	add_hostkey_pref_if_avail(known_hosts, hostname, port, prefs, LIBSSH2_KNOWNHOST_KEY_SSHRSA, "ssh-rsa");
 }
 
@@ -555,7 +562,7 @@ static int _git_ssh_session_create(
 	if (git_str_len(&prefs) > 0) {
 		do {
 			rc = libssh2_session_method_pref(s, LIBSSH2_METHOD_HOSTKEY, git_str_cstr(&prefs));
-		} while (LIBSSH2_ERROR_EAGAIN == rc || LIBSSH2_ERROR_TIMEOUT == rc);
+		} while (LIBSSH2_ERROR_EAGAIN == rc);
 		if (rc != LIBSSH2_ERROR_NONE) {
 			ssh_error(s, "failed to set hostkey preference");
 			goto on_error;
@@ -565,7 +572,7 @@ static int _git_ssh_session_create(
 
 	do {
 		rc = libssh2_session_handshake(s, socket->s);
-	} while (LIBSSH2_ERROR_EAGAIN == rc || LIBSSH2_ERROR_TIMEOUT == rc);
+	} while (LIBSSH2_ERROR_EAGAIN == rc);
 
 	if (rc != LIBSSH2_ERROR_NONE) {
 		ssh_error(s, "failed to start SSH session");
@@ -1015,7 +1022,8 @@ static int list_auth_methods(int *out, LIBSSH2_SESSION *session, const char *use
 
 	*out = 0;
 
-	list = libssh2_userauth_list(session, username, (unsigned int)strlen(username));
+	list = libssh2_userauth_list(session, username,
+			(unsigned int)strlen(username));
 
 	/* either error, or the remote accepts NONE auth, which is bizarre, let's punt */
 	if (list == NULL && !libssh2_userauth_authenticated(session)) {

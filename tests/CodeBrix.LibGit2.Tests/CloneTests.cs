@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using CodeBrix.LibGit2.Handlers;
 using CodeBrix.LibGit2.Tests.TestHelpers;
+using SilverAssertions;
 using Xunit;
 
 namespace CodeBrix.LibGit2.Tests; //was previously: LibGit2Sharp.Tests;
@@ -80,6 +81,23 @@ public class CloneTests : BaseFixture
             Assert.Equal(branchName, head.FriendlyName);
             Assert.True(head.IsTracking);
             Assert.Equal(headTipId, head.Tip.Sha);
+        }
+    }
+
+    [Fact]
+    public void Clone_without_checkout_leaves_working_directory_empty()
+    {
+        //Arrange
+        var scd = BuildSelfCleaningDirectory();
+
+        //Act
+        string clonedRepoPath = Repository.Clone(BareTestRepoPath, scd.DirectoryPath, new CloneOptions { Checkout = false });
+
+        //Assert
+        using (var repo = new Repository(clonedRepoPath))
+        {
+            repo.Head.Tip.Should().NotBeNull();
+            File.Exists(Path.Combine(repo.Info.WorkingDirectory, "README")).Should().BeFalse();
         }
     }
 

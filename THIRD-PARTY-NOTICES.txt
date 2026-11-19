@@ -48,6 +48,11 @@ the material below was received are set forth in each notice.
    Applies to: CodeBrix.LibGit2 (the managed assembly) and the non-packed
                test project
 
+   Upstream LibGit2Sharp binds libgit2 1.8. The interop layer here has been
+   adapted by this project to libgit2 1.9 (the native structures, values and
+   defaults that changed between the two; see MAINTAINER-README.txt). That
+   adaptation is this project's own work and is not upstream code.
+
    Material derived from LibGit2Sharp:
      - every source file under src/CodeBrix.LibGit2/, ported from upstream's
        LibGit2Sharp/ project (each carries a "//was previously:
@@ -140,7 +145,7 @@ THE SOFTWARE.
    Authors:    the libgit2 contributors (see AUTHORS in the source tree),
                unless otherwise stated
    Source:     https://github.com/libgit2/libgit2
-   Snapshot:   commit 5853918c4c6a7b12f8becf4bd11ff4362ebb9020 (tag v1.8.6)
+   Snapshot:   commit 49e408b3208bc3093757a1c2db938d3590f3f412 (tag v1.9.7)
    License:    GNU General Public License version 2 WITH the libgit2 linking
                exception (COPYING), plus the licences of the bundled code
                listed below
@@ -150,30 +155,34 @@ THE SOFTWARE.
 
    libgit2 reaches this repository and package in two ways:
 
-     a. SOURCE. The complete, unmodified libgit2 tree at the commit above
-        (including its tests and deps/) is vendored in
+     a. SOURCE. The unmodified libgit2 tree at the commit above (including
+        its tests and deps/, without upstream's .github/ configuration
+        folder, which is left out) is vendored in
         tools/libgit2-native-tools/libgit2/; tools/libgit2-native-tools/
-        UPSTREAM.txt records how it was copied and how to verify it. That
-        folder is not part of the package.
+        UPSTREAM.txt records how it was copied, what was left out and how to
+        verify it. That folder is not part of the package.
      b. NATIVE BINARIES. The package REDISTRIBUTES libgit2 in binary form,
         committed under native_libraries/<rid>/ and packed under
         runtimes/<rid>/native/ with libgit2's COPYING beside each copy as
         LICENSE-Libgit2.txt:
-          runtimes/win-x64/native/git2-5853918.dll
-          runtimes/win-arm64/native/git2-5853918.dll
-          runtimes/osx-x64/native/libgit2-5853918.dylib
-          runtimes/osx-arm64/native/libgit2-5853918.dylib
-          runtimes/linux-x64/native/libgit2-5853918.so
-          runtimes/linux-arm64/native/libgit2-5853918.so
-          runtimes/linux-riscv64/native/libgit2-5853918.so
-          runtimes/android-arm64/native/libgit2-5853918.so
-          runtimes/android-x64/native/libgit2-5853918.so
-        The Linux and Android binaries are built in this repository from the
-        vendored source with no patches; the Windows and macOS binaries are
-        adopted unchanged from LibGit2Sharp.NativeBinaries (notice 4), which
-        built them from the same libgit2 commit. Each binary has a
-        .provenance.txt beside it in native_libraries/;
-        tools/libgit2-native-tools/BUILD-PROVENANCE.txt has the full record.
+          runtimes/win-x64/native/git2-49e408b.dll
+          runtimes/win-arm64/native/git2-49e408b.dll
+          runtimes/osx-x64/native/libgit2-49e408b.dylib
+          runtimes/osx-arm64/native/libgit2-49e408b.dylib
+          runtimes/linux-x64/native/libgit2-49e408b.so
+          runtimes/linux-arm64/native/libgit2-49e408b.so
+          runtimes/linux-riscv64/native/libgit2-49e408b.so
+          runtimes/android-arm64/native/libgit2-49e408b.so
+          runtimes/android-x64/native/libgit2-49e408b.so
+        EVERY binary is built in this repository's tooling from the vendored
+        source with no patches: the Linux and Android ones in containers and
+        with the Android NDK, the Windows and macOS ones on the maintainer's
+        Windows machine and Mac with the scripts under
+        tools/libgit2-native-tools/. None is adopted from another project's
+        build. A platform appears in the package once its binary has been
+        built. Each binary has a .provenance.txt beside it in
+        native_libraries/; tools/libgit2-native-tools/BUILD-PROVENANCE.txt
+        has the full record, including which platforms are still pending.
 
    THIRD-PARTY CODE BUNDLED BY LIBGIT2. libgit2 carries copies of the
    following code in its tree and compiles some of it into the library. Which
@@ -437,7 +446,8 @@ file) carries the full text of the GNU Lesser General Public License 2.1 but
 not the xdiff files' own copyright notices, and not the Eclipse Distribution
 License under which one of them (xhistogram.c) is licensed. They are reproduced
 here, VERBATIM, from the file headers in libgit2/deps/xdiff/ at libgit2 commit
-5853918c4c6a7b12f8becf4bd11ff4362ebb9020 (1.8.6):
+49e408b3208bc3093757a1c2db938d3590f3f412 (1.9.7; the four headers are unchanged
+from 1.8.6):
 
   * xdiff.h - the LibXDiff notice, as carried (with the year range of the
     respective file) by xdiff.h, xdiffi.c/.h, xemit.c/.h, xinclude.h,
@@ -646,13 +656,50 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
    -------------------------------------------------------------------------
 
+     i. Hash map derived from khash (klib) - libgit2/src/util/hashmap.h
+        Copyright (c) 2008, 2009, 2011 by Attractive Chaos
+        License: MIT
+        Compiled into every shipped binary. libgit2's COPYING does not carry
+        this notice; it is reproduced here from the file's own header:
+
+   -------------------------------------------------------------------------
+/*
+ * This is a variation on khash.h from khlib 2013-05-02 (0.2.8)
+ *
+ * The MIT License
+ *
+ * Copyright (c) 2008, 2009, 2011 by Attractive Chaos <attractor@live.co.uk>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+   -------------------------------------------------------------------------
+
    COPYING also carries the notices for code libgit2 includes directly in its
    own sources: wildmatch (Rich Salz, BSD-style), portions of the OpenSSL
    headers (Eric Young and the OpenSSL Project), the xoroshiro256** generator
    (public domain), the RFC 6234 SHA-256 code, an Android-derived basename
-   function (BSD), and the Clar test framework (ISC; tests only). As those
-   licences require, this documentation includes the following
-   acknowledgements:
+   function (BSD), and the Clar test framework (ISC; tests only). (No
+   shipped binary uses the RFC 6234 code: SHA-256 comes from the platform's
+   own library on every platform.) As those licences require, this
+   documentation includes the following acknowledgements:
 
      This product includes software developed by Rich Salz.
      This product includes cryptographic software written by Eric Young
@@ -2167,7 +2214,7 @@ USE OR OTHER DEALINGS IN THE SOFTWARE.
    The complete, unmodified tree is vendored in
    tools/libgit2-native-tools/mbedtls/ (not part of the package). The two
    Android builds compile it first, in its default configuration, as static
-   libraries and link them INTO libgit2-5853918.so, which is how those
+   libraries and link them INTO libgit2-49e408b.so, which is how those
    binaries get HTTPS. No other binary contains Mbed TLS. Its LICENSE ships
    beside both Android binaries as LICENSE-MbedTls.txt. The framework/
    submodule holds build and test scripts and data; it carries the same
@@ -2744,15 +2791,13 @@ Public License instead of this License.
                LibGit2Sharp.NativeBinaries 2.0.324
    License:    MIT
 
-   Applies to: CodeBrix.LibGit2 (the adopted Windows and macOS native
-               binaries) and the native build tooling in this repository
+   Applies to: the native build tooling in this repository. (No binary in
+               the package comes from LibGit2Sharp.NativeBinaries any more:
+               the Windows and macOS binaries of earlier versions of this
+               package were adopted from it; since the move to libgit2 1.9
+               every binary is built here - see notice 2.)
 
    Material derived from LibGit2Sharp.NativeBinaries:
-     - the win-x64, win-arm64, osx-x64 and osx-arm64 native binaries in
-       native_libraries/ and in the package are adopted UNCHANGED from the
-       LibGit2Sharp.NativeBinaries 2.0.324 package on nuget.org. Their
-       content is libgit2 (notice 2); the upstream project's own MIT licence
-       covers its packaging and build scripts;
      - tools/libgit2-native-tools/reference-upstream/ holds VERBATIM copies
        of that project's build files (build.libgit2.sh, build.libgit2.ps1,
        dockerbuild.sh, docker/linux, docker/musl, UpdateLibgit2ToSha.ps1,

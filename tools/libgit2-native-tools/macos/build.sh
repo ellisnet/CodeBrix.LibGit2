@@ -1,27 +1,35 @@
 #!/usr/bin/env bash
 # ==============================================================================================
-# build.sh - build libgit2-5853918.dylib for osx-arm64 and/or osx-x64, from this repository
+# build.sh - build libgit2-49e408b.dylib for osx-arm64 and/or osx-x64, from this repository
 # ==============================================================================================
 #
-#   NEVER YET RUN. Written on Linux on 2026-10-17, adapted from upstream
+#   NEVER YET RUN. Written on Linux on 2026-10-17 for libgit2 1.8.6, adapted from upstream
 #   libgit2sharp.nativebinaries' build.libgit2.sh, Darwin branch (a verbatim copy is in
-#   ../reference-upstream/build.libgit2.sh). Expect to fix something on the first real run; fix
-#   it IN THE SCRIPT and record it in ../BUILD-PROVENANCE.txt, then rewrite this header and
-#   README.txt's status block with what the run established.
+#   ../reference-upstream/build.libgit2.sh - upstream's 1.8.6-era recipe; upstream has no
+#   packaging for libgit2 1.9). Re-pointed at libgit2 1.9.7 on 2026-11-18, still on Linux and
+#   still unrun: the osx-x64 / osx-arm64 binaries are PENDING until this script is run on a
+#   Mac. Expect to fix something on the first real run; fix it IN THE SCRIPT and record it
+#   in ../BUILD-PROVENANCE.txt, then rewrite this header and README.txt's status block with
+#   what the run established.
 #
 #   ./build.sh arm64          build osx-arm64
 #   ./build.sh x64            build osx-x64
 #   ./build.sh all            both (the default)
 #
 # Options (environment variables):
-#   DEPLOYMENT_TARGET=12.0    pass -DCMAKE_OSX_DEPLOYMENT_TARGET. UNSET BY DEFAULT, exactly as
-#                             upstream: the floor is then whatever this Mac's Xcode defaults to
-#                             (upstream's 2.0.324 dylibs say minos 14.0 - their macos-14 runner).
-#                             See README.txt, THE MACOS FLOOR, before setting it.
+#   DEPLOYMENT_TARGET=14.0    the minimum macOS the dylibs will load on, passed as
+#                             -DCMAKE_OSX_DEPLOYMENT_TARGET. DEFAULT 14.0 - the floor of the
+#                             1.8.6 dylibs this package shipped before (adopted from upstream's
+#                             2.0.324, built on a macos-14 runner). The owner's rule: a new
+#                             binary must not require a newer macOS than the one it replaces.
+#                             Upstream itself passes none, and the floor is then whatever the
+#                             build Mac's Xcode defaults to - on a current Mac, HIGHER than 14.0.
+#                             The gate fails a dylib whose minimum is not exactly this value.
+#                             See README.txt, THE MACOS FLOOR, before changing it.
 #
 # WHAT IT KEEPS FROM UPSTREAM, EXACTLY - the cmake arguments:
 #     -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF -DUSE_SSH=exec
-#     -DLIBGIT2_FILENAME=git2-5853918 -DCMAKE_OSX_ARCHITECTURES=arm64|x86_64
+#     -DLIBGIT2_FILENAME=git2-49e408b -DCMAKE_OSX_ARCHITECTURES=arm64|x86_64   (name from pins.env)
 #     -DUSE_HTTPS=ON -DUSE_BUNDLED_ZLIB=ON
 #   (USE_HTTPS=ON on a Mac auto-selects SecureTransport), CMake's default generator, then
 #   `cmake --build .`. Upstream does not strip the dylib and neither does this.
@@ -53,6 +61,7 @@ SCRATCH_ROOT="${TMPDIR:-/tmp}/codebrix-libgit2-build-macos"
 # shellcheck source=../linux/pins.env
 . "$TOOLS_DIR/linux/pins.env"
 DYLIB="lib$LIBGIT2_FILENAME.dylib"
+DEPLOYMENT_TARGET="${DEPLOYMENT_TARGET:-14.0}"
 
 # Load commands the dylib may link: the system only. Anything else would have to be installed
 # on the user's Mac.
@@ -61,7 +70,14 @@ ALLOWED_DYLIBS="/System/Library/Frameworks/CoreFoundation.framework/Versions/A/C
 /usr/lib/libiconv.2.dylib
 /usr/lib/libSystem.B.dylib
 /usr/lib/libz.1.dylib"
-EXPECTED_FEATURES=15     # THREADS | HTTPS | SSH | NSEC - what upstream's 2.0.324 dylibs return
+# The git_libgit2_features() mask. Upstream's 1.8.6 dylibs returned THREADS | HTTPS | SSH | NSEC
+# = 15; libgit2 1.9 widened git_feature_t (include/git2/common.h), and for the SAME options a
+# 1.9.7 macOS build must return 15 | HTTP_PARSER 16 | REGEX 32 | I18N 64 (iconv, ON on Apple) |
+# AUTH_NTLM 128 (bundled ntlmclient over CommonCrypto) | COMPRESSION 512 | SHA1 1024 = 1791.
+# AUTH_NEGOTIATE 256 stays clear (USE_GSSAPI is OFF by default), SHA256 2048 too (experimental
+# API off). Derived from src/libgit2/libgit2.c, NOT yet observed on a real build - if the first
+# run reports another value, find out why before changing this number.
+EXPECTED_FEATURES=1791
 
 # ----------------------------------------------------------------------------------------------
 # Prerequisites - checked, never installed
@@ -103,7 +119,7 @@ build_slice() {
     local -a opts=(-DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF -DUSE_SSH=exec
                    "-DLIBGIT2_FILENAME=$LIBGIT2_FILENAME" "-DCMAKE_OSX_ARCHITECTURES=$osxarch"
                    -DUSE_HTTPS=ON -DUSE_BUNDLED_ZLIB=ON)
-    [ -n "${DEPLOYMENT_TARGET:-}" ] && opts+=("-DCMAKE_OSX_DEPLOYMENT_TARGET=$DEPLOYMENT_TARGET")
+    opts+=("-DCMAKE_OSX_DEPLOYMENT_TARGET=$DEPLOYMENT_TARGET")
     echo "  cmake ${opts[*]}"
     cmake -S "$scratch" -B "$build" "${opts[@]}" > "$SCRATCH_ROOT/$rid/configure.log" 2>&1 \
         || { tail -60 "$SCRATCH_ROOT/$rid/configure.log" >&2; echo "ERROR: cmake configure failed" >&2; exit 1; }
@@ -113,8 +129,8 @@ build_slice() {
     cmake --build "$build" -j "$(sysctl -n hw.ncpu)" > "$SCRATCH_ROOT/$rid/build.log" 2>&1 \
         || { grep -E -B2 -A8 'error:' "$SCRATCH_ROOT/$rid/build.log" | head -80 >&2; echo "ERROR: build failed" >&2; exit 1; }
 
-    # CMake writes libgit2-5853918.1.8.6.dylib plus symlinks; upstream copies
-    # libgit2-5853918.dylib (cp follows the link), and so does this.
+    # CMake writes libgit2-49e408b.1.9.7.dylib plus symlinks; upstream copies
+    # libgit2-49e408b.dylib (cp follows the link), and so does this.
     rm -rf "$out"; mkdir -p "$out"
     cp "$build/$DYLIB" "$out/$DYLIB"
     cp "$TOOLS_DIR/$LIBGIT2_DIR/COPYING" "$out/$LICENSE_FILE_NAME"
@@ -150,14 +166,18 @@ build_slice() {
     [ -z "$missing" ] && pass "$(printf '%s\n' "$exports" | grep -c '^git_') git_* exports, all required ones present" || fail "missing exports:$missing"
 
     local minos; minos="$(otool -l "$lib" | awk '/LC_BUILD_VERSION/{f=1} f&&/minos/{print $2; exit}')"
-    pass "minimum macOS (LC_BUILD_VERSION minos): ${minos:-unknown}"
+    if [ "${minos:-unknown}" = "$DEPLOYMENT_TARGET" ]; then
+        pass "minimum macOS (LC_BUILD_VERSION minos): $minos, as requested"
+    else
+        fail "minimum macOS is ${minos:-unknown}, but $DEPLOYMENT_TARGET was requested (DEPLOYMENT_TARGET). The dylib would refuse to load on the macOS versions in between."
+    fi
 
     local want
     for want in "HTTPS, using SecureTransport" "SSH, using OpenSSH exec support" "SHA1, using CollisionDetection" "zlib, using bundled zlib"; do
         printf '%s\n' "$summary" | grep -F -x -- " * $want" > /dev/null && pass "feature: $want" || fail "feature summary lacks: $want"
     done
 
-    cc -std=c11 -O1 -arch "$osxarch" -o "$out/smoke-test" "$TOOLS_DIR/linux/smoke-test.c"
+    cc -std=c11 -O1 -arch "$osxarch" "-mmacosx-version-min=$DEPLOYMENT_TARGET" -o "$out/smoke-test" "$TOOLS_DIR/linux/smoke-test.c"
     local smoke="(not run - this Mac cannot execute $osxarch)"
     if arch "-$osxarch" /usr/bin/true 2> /dev/null; then
         smoke="$(arch "-$osxarch" "$out/smoke-test" "$lib" "$LIBGIT2_VERSION" "$EXPECTED_FEATURES" 2>&1)" \

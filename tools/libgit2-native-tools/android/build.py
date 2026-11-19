@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build libgit2-5853918.so for android-arm64 (arm64-v8a) and android-x64 (x86_64) from the vendored
+"""Build libgit2-49e408b.so for android-arm64 (arm64-v8a) and android-x64 (x86_64) from the vendored
 libgit2 source, with HTTPS through mbedTLS built first, as static libraries, from the vendored mbedtls/.
 
 Never installs or downloads anything. Requires the pinned NDK (pins.json), cmake and ninja on PATH, and
@@ -60,7 +60,9 @@ def check_tools(ndk):
     assert version_tuple(cmake) >= version_tuple(PINS["cmake_minimum"]), f"cmake too old: {cmake}"
     assert version_tuple(ninja) >= version_tuple(PINS["ninja_minimum"]), f"ninja too old: {ninja}"
     header = (TOOLS / "libgit2/include/git2/version.h").read_text()
-    assert f'#define LIBGIT2_VERSION        "{PINS["libgit2_version"]}"' in header, "libgit2/ is not the pinned version"
+    # Whitespace-tolerant on purpose: 1.9 re-aligned the #define columns of version.h.
+    assert re.search(rf'^#define LIBGIT2_VERSION\s+"{re.escape(PINS["libgit2_version"])}"\s*$', header, flags=re.M), \
+        "libgit2/ is not the pinned version"
     build_info = (TOOLS / "mbedtls/include/mbedtls/build_info.h").read_text()
     assert f'#define MBEDTLS_VERSION_STRING         "{PINS["mbedtls_version"]}"' in build_info, \
         "mbedtls/ is not the pinned version"
@@ -143,13 +145,17 @@ def build(arch, ndk, jobs, tools):
                             f"-DMBEDTLS_LIBRARY={mbed_libs['mbedtls']}",
                             f"-DMBEDX509_LIBRARY={mbed_libs['mbedx509']}",
                             f"-DMBEDCRYPTO_LIBRARY={mbed_libs['mbedcrypto']}"]
-        # -fgnu-keywords: libgit2 1.8.6 compiles its own targets as strict ISO C90 (C_STANDARD 90,
+        # -fgnu-keywords: libgit2 1.8.6 compiled its own targets as strict ISO C90 (C_STANDARD 90,
         # C_EXTENSIONS OFF, hard-coded target properties), and the NDK's kernel UAPI headers
         # (linux/swab.h, reached from <arpa/inet.h>) use `static inline`, which is not a C90
-        # keyword - every file fails with "unknown type name 'inline'" (r29 and r30 alike). clang's
+        # keyword - every file failed with "unknown type name 'inline'" (r29 and r30 alike). clang's
         # -fgnu-keywords makes `inline` (a GNU keyword) available again without changing the
-        # language standard or any source; libgit2's own src/libgit2/streams/mbedtls.c works round
-        # the same C90 limit with `#define inline __inline__`. First-run fix, 2026-10-17.
+        # language standard or any source. First-run fix, 2026-10-17.
+        # libgit2 1.9 no longer hard-codes C90 on its object targets and defaults CMAKE_C_STANDARD
+        # to 99 when CMAKE_SYSTEM_NAME is Android (top-level CMakeLists.txt), so `inline` is a
+        # keyword there anyway and this flag is REDUNDANT from 1.9.7 on. It is kept, unchanged,
+        # so the 1.9.7 build differs from the 1.8.6 one only where libgit2 itself changed; it
+        # affects parsing only, not the generated code. Dropping it is a separate decision.
         libgit2_c_flags = compile_flags + " -fgnu-keywords"
         flag_options = [f"-DCMAKE_C_FLAGS={libgit2_c_flags}", f"-DCMAKE_SHARED_LINKER_FLAGS={link_flags}"]
         log = configure(source, build_dir, options + flag_options)
@@ -157,9 +163,9 @@ def build(arch, ndk, jobs, tools):
         summary = "\n".join(line[3:] if line.startswith("-- ") else line for line in summary.splitlines()).strip()
         (dest / "cmake-summary.txt").write_text(summary + "\n")
         run("cmake", "--build", build_dir, "--parallel", jobs)
-        # UNLIKE Linux there is no libgit2-5853918.so.1.8.6 + symlinks: CMake's Android platform
+        # UNLIKE Linux there is no libgit2-49e408b.so.1.9.7 + symlinks: CMake's Android platform
         # module does not version shared libraries (CMAKE_PLATFORM_NO_VERSIONED_SONAME), so the
-        # build writes one regular file, libgit2-5853918.so, whose SONAME is that same plain name -
+        # build writes one regular file, libgit2-49e408b.so, whose SONAME is that same plain name -
         # the Android convention. (libgit2's SONAME option must stay ON, its default, all the same:
         # libgit2 only applies LIBGIT2_FILENAME inside that option - with it OFF the file is called
         # liblibgit2package.so. Found on the first run, 2026-10-17.)
@@ -168,7 +174,8 @@ def build(arch, ndk, jobs, tools):
         shutil.copy2(library, dest / "unstripped" / LIBRARY)
         shutil.copy2(library, dest / LIBRARY)
         run(toolchain / "llvm-strip", "--strip-unneeded", dest / LIBRARY)
-        features_header = build_dir / "src/util/git2_features.h"
+        # libgit2 1.9 generates git2_features.h into <build>/gen_headers/ (1.8.6: <build>/src/util/).
+        features_header = build_dir / "gen_headers/git2_features.h"
         shutil.copy2(features_header, dest / "git2_features.h")
         # The smoke test is cross-compiled for a device run (README.txt); build.py does not run it.
         run(compiler, "-std=c11", "-O1", "-Wl,-z,max-page-size=16384", TOOLS / "linux/smoke-test.c",

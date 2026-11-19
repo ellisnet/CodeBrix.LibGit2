@@ -13,9 +13,11 @@
  *
  *     ./smoke-test <path-to-library> [expected-version] [expected-features] [ca-location]
  *
- *       expected-version   default "1.8.6"
+ *       expected-version   default "1.9.7"
  *       expected-features  the exact git_libgit2_features() bit mask the build must report,
- *                          default 15 (THREADS 1 | HTTPS 2 | SSH 4 | NSEC 8); "-" skips the check
+ *                          default 1727 (the Linux build: THREADS 1 | HTTPS 2 | SSH 4 | NSEC 8 |
+ *                          HTTP_PARSER 16 | REGEX 32 | AUTH_NTLM 128 | COMPRESSION 512 |
+ *                          SHA1 1024); "-" skips the check
  *       ca-location        optional: a CA bundle FILE or a CA certificate DIRECTORY. When given,
  *                          GIT_OPT_SET_SSL_CERT_LOCATIONS is called with it (as the file or the
  *                          path argument, whichever it is), which forces the TLS backend to
@@ -43,8 +45,11 @@
  *
  * Exit code 0 means every step passed; anything else names the step that failed.
  *
- * Function types are declared by hand from the libgit2 1.8.6 headers (include/git2/common.h,
- * global.h, errors.h, odb.h, oid.h, repository.h, blob.h, types.h). With EXPERIMENTAL_SHA256 off
+ * Function types are declared by hand from the libgit2 1.9.7 headers (include/git2/common.h,
+ * global.h, errors.h, odb.h, oid.h, repository.h, blob.h, types.h) - every signature used here
+ * is unchanged from 1.8.6. What 1.9 DID change is git_feature_t: it gained eight bits after
+ * NSEC (HTTP_PARSER 16, REGEX 32, I18N 64, AUTH_NTLM 128, AUTH_NEGOTIATE 256, COMPRESSION 512,
+ * SHA1 1024, SHA256 2048), so the expected mask differs per platform and 1.8.6's 15 is wrong. With EXPERIMENTAL_SHA256 off
  * (libgit2's default, and every build here) a git_oid is 20 bytes; a larger buffer is passed
  * anyway. GIT_OPT_SET_SSL_CERT_LOCATIONS is the 13th git_libgit2_opt_t value, i.e. 12;
  * GIT_OBJECT_BLOB is 3. GIT_EXTERN functions use the platform's default C calling convention.
@@ -129,8 +134,8 @@ static int remove_entry(const char *path, const struct stat *sb, int flag, struc
 
 int main(int argc, char **argv)
 {
-    const char *expected_version = "1.8.6";
-    const char *expected_features = "15";
+    const char *expected_version = "1.9.7";
+    const char *expected_features = "1727";
     const char *ca_file = NULL;
     char version[32];
     int major = 0, minor = 0, rev = 0, features, rc;
@@ -177,9 +182,13 @@ int main(int argc, char **argv)
 
     /* 2. features */
     features = p_features();
-    printf("git_libgit2_features: %d =%s%s%s%s\n", features,
+    printf("git_libgit2_features: %d =%s%s%s%s%s%s%s%s%s%s%s%s\n", features,
            (features & 1) ? " THREADS" : "", (features & 2) ? " HTTPS" : "",
-           (features & 4) ? " SSH" : "", (features & 8) ? " NSEC" : "");
+           (features & 4) ? " SSH" : "", (features & 8) ? " NSEC" : "",
+           (features & 16) ? " HTTP_PARSER" : "", (features & 32) ? " REGEX" : "",
+           (features & 64) ? " I18N" : "", (features & 128) ? " AUTH_NTLM" : "",
+           (features & 256) ? " AUTH_NEGOTIATE" : "", (features & 512) ? " COMPRESSION" : "",
+           (features & 1024) ? " SHA1" : "", (features & 2048) ? " SHA256" : "");
     if (strcmp(expected_features, "-") != 0 && features != atoi(expected_features)) {
         fprintf(stderr, "FAIL: features %d, expected %s\n", features, expected_features);
         return 21;

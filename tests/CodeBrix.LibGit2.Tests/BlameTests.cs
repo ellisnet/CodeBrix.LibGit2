@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using CodeBrix.LibGit2.Tests.TestHelpers;
+using SilverAssertions;
 using Xunit;
 
 namespace CodeBrix.LibGit2.Tests; //was previously: LibGit2Sharp.Tests;
@@ -17,6 +18,24 @@ public class BlameTests : BaseFixture
         Assert.Equal(0, blame.HunkForLine(0).FinalStartLineNumber);
         Assert.Equal("schacon@gmail.com", blame.HunkForLine(0).FinalSignature.Email);
         Assert.Equal("4a202b3", blame.HunkForLine(0).FinalCommit.Id.ToString(7));
+    }
+
+    [Fact]
+    public void Blame_reads_the_initial_side_of_a_hunk()
+    {
+        //Arrange
+        string path = SandboxBareTestRepo();
+        using (var repo = new Repository(path))
+        {
+            //Act
+            var hunk = repo.Blame("README")[0];
+
+            //Assert
+            hunk.InitialPath.Should().Be("README");
+            hunk.InitialStartLineNumber.Should().Be(0);
+            hunk.InitialCommit.Id.ToString(7).Should().Be("4a202b3");
+            hunk.InitialSignature.Email.Should().Be("schacon@gmail.com");
+        }
     }
 
     [Fact]

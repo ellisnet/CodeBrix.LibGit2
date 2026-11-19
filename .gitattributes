@@ -1,0 +1,35 @@
+# Line endings: LF for this repository's own files, on every platform.
+#
+# The committed files are already LF. These rules only stop a checkout from
+# changing them (core.autocrlf=true on Windows would expand LF to CRLF, and
+# the tests and scripts do not expect that).
+* text=auto eol=lf
+
+# Never touched. A binary file with newline translation applied to it is
+# silently corrupt, so these are declared rather than left to git's heuristic.
+*.png    binary
+*.nupkg  binary
+*.dylib  binary
+*.so     binary
+*.dll    binary
+*.lib    binary
+*.exe    binary
+*.pdb    binary
+*.a      binary
+*.o      binary
+*.xz     binary
+*.gz     binary
+*.zip    binary
+*.ico    binary
+*.jpg    binary
+*.gif    binary
+
+# The vendored source trees are exact copies of what upstream published, and
+# the test resources are git repositories and fixtures whose line endings are
+# part of what the tests check. Many of those files are CRLF or mixed on
+# purpose. Git must never normalise anything in these folders. (Each of them
+# also carries .gitattributes files of its own, which keep applying inside it.)
+tools/libgit2-native-tools/libgit2/**             -text
+tools/libgit2-native-tools/mbedtls/**             -text
+tools/libgit2-native-tools/reference-upstream/**  -text
+tests/CodeBrix.LibGit2.Tests/Resources/**         -text

@@ -1,0 +1,93 @@
+libgit2-49e408b.so -- Linux riscv64 (linux-riscv64)
+================================================================================
+This binary was BUILT HERE, from the libgit2 source snapshot vendored in this
+repository, by:
+
+    tools/libgit2-native-tools/linux/build.sh riscv64   (-> container-build.sh)
+
+inside a digest-pinned manylinux container with the network DISABLED. Nothing
+was downloaded; the build reaches nothing outside this repository. It was built
+once, from scratch, on 2026-11-19 UTC.
+
+libgit2 version   : 1.9.7 (tag v1.9.7, released 2026-08-13)
+libgit2 commit    : 49e408b3208bc3093757a1c2db938d3590f3f412
+Source            : tools/libgit2-native-tools/libgit2/ (unmodified, .github/
+                    left out; see tools/libgit2-native-tools/UPSTREAM.txt)
+Patches applied   : none
+
+Built             : 2026-11-19 03:37:39 UTC
+Build duration    : 143s (wall clock inside the container)
+Build host        : Dell Precision 7770 laptop, LMDE 7, x86_64, podman
+                    (the same x86_64 laptop, under qemu-user emulation)
+Network           : DISABLED during this build (interfaces: lo)
+Derived image     : codebrix-libgit2-build-riscv64
+Base image        : quay.io/pypa/manylinux_2_39_riscv64:2026.07.19-1
+                    @sha256:04b3acc69a6cebb10ac1252587d202acce6445d91c783d3f92229bb2b2483069
+Container OS      : Rocky Linux 10.2 (Red Quartz)
+Toolchain         : cc (GCC) 14.3.1 20251022 (Red Hat 14.3.1-4)
+                    GNU ld version 2.41-63.el10
+                    cmake version 4.4.3 (pinned) / ninja 1.13.2 (pinned)
+Container glibc   : ldd (GNU libc) 2.39
+CMake options     : -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF
+                    -DUSE_SSH=exec -DLIBGIT2_FILENAME=git2-49e408b
+                    -DUSE_HTTPS=OpenSSL-Dynamic -DUSE_BUNDLED_ZLIB=ON
+                    (= upstream build.libgit2.sh's 1.8.6-era Linux flags)
+                    -DREGEX_BACKEND=builtin (the image carries pcre-devel;
+                    see tools/libgit2-native-tools/linux/pins.env)
+                    CMAKE_C_FLAGS="-g
+                      -ffile-prefix-map=/tmp/codebrix-libgit2-src=libgit2
+                      -ffile-prefix-map=/tmp/codebrix-libgit2-build=build
+                      -ffile-prefix-map=/work=libgit2-native-tools"
+                    CMAKE_SHARED_LINKER_FLAGS="-Wl,--build-id=sha1"
+                    Release flags -O3 -DNDEBUG (CMake's); then
+                    strip --strip-unneeded
+
+Features (libgit2's CMake summary):
+                    threadsafe, nanoseconds, futimens,
+                    HTTPS using OpenSSL-Dynamic, SHA1 using CollisionDetection,
+                    SHA256 using OpenSSL-Dynamic, http-parser bundled (llhttp),
+                    regex bundled PCRE (PCRE2), xdiff bundled,
+                    SSH using OpenSSH exec support, zlib bundled, ntlmclient
+git_libgit2_features(): 1727 = THREADS | HTTPS | SSH | NSEC | HTTP_PARSER |
+                    REGEX | AUTH_NTLM | COMPRESSION | SHA1 (smoke test; the
+                    1.9 git_feature_t - 1.8.6 reported 15 for the same build)
+
+Architecture      : ELF64, RISC-V (RVC, double-float ABI)
+Built as          : libgit2-49e408b.so.1.9.7, shipped as libgit2-49e408b.so
+SONAME            : libgit2-49e408b.so.1.9
+Dynamic deps      : libc.so.6
+                    - glibc only; libssl / libcrypto are dlopen()ed at run time
+                    (libssl.so.1.1, .1.0.0, .10, .3 are probed, in that order)
+glibc floor       : 2.38 (allowed <= 2.39)
+Exports           : 954 (950 git_*)
+Build-id (sha1)   : 41ab7faa013a5e14fe4925ddb68daf3946b56126
+
+Output SHA-256    : 378694e743afc7b4a2c4fc1c6253248c208b622d02b3c6a8ffed6fd3491698e4
+Output size       : 1707288 bytes
+Unstripped SHA-256: 37143b08481f86d0e2a33ae6ab8a05a87a867ac5f8d069e3b27cec44ef7ea2a2
+Unstripped size   : 9140032 bytes
+                    (stored in tools/libgit2-native-tools/unstripped/linux-riscv64/)
+
+Gate              : ELF class/machine, SONAME, no RPATH/RUNPATH/TEXTREL, 20
+                    required exports, glibc-only NEEDED (libssl/libcrypto/libz/
+                    libpcre forbidden), ldd -r clean, glibc floor, matching
+                    build-ids, 11 required feature-summary lines,
+                    OpenSSL-Dynamic probe names present, smoke test (version,
+                    features, init, blob hash, repository init/write/open, TLS
+                    init through the image's libssl.so.3 (OpenSSL 3.5.5),
+                    shutdown)
+                    - EXECUTED under qemu-user; real RISC-V hardware is still
+                    the last word
+                    - ALL PASSED
+
+Vendored on       : 2026-11-18
+
+LICENCE FILES BESIDE THIS ONE (all packed into runtimes/linux-riscv64/native/):
+  LICENSE-Libgit2.txt  libgit2's COPYING, verbatim: GPLv2 WITH the libgit2
+                       linking exception, plus the licences of the bundled
+                       zlib, PCRE2, llhttp, ntlmclient, SHA-1 collision
+                       detection, wildmatch and others, and the LGPL-2.1 text
+  LICENSE-Xdiff.txt    the bundled xdiff's own notices (LGPL-2.1-or-later;
+                       xhistogram.c under the Eclipse Distribution License),
+                       verbatim from libgit2/deps/xdiff/ headers
+See THIRD-PARTY-NOTICES.txt in the repository root.

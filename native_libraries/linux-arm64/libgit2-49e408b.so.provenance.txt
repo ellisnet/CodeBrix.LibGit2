@@ -1,0 +1,93 @@
+libgit2-49e408b.so -- Linux arm64 (linux-arm64)
+================================================================================
+This binary was BUILT HERE, from the libgit2 source snapshot vendored in this
+repository, by:
+
+    tools/libgit2-native-tools/linux/build.sh arm64   (-> container-build.sh)
+
+inside a digest-pinned manylinux container with the network DISABLED. Nothing
+was downloaded; the build reaches nothing outside this repository. It was built
+once, from scratch, on 2026-11-19 UTC.
+
+libgit2 version   : 1.9.7 (tag v1.9.7, released 2026-08-13)
+libgit2 commit    : 49e408b3208bc3093757a1c2db938d3590f3f412
+Source            : tools/libgit2-native-tools/libgit2/ (unmodified, .github/
+                    left out; see tools/libgit2-native-tools/UPSTREAM.txt)
+Patches applied   : none
+
+Built             : 2026-11-19 03:34:56 UTC
+Build duration    : 162s (wall clock inside the container)
+Build host        : Dell Precision 7770 laptop, LMDE 7, x86_64, podman
+                    (the same x86_64 laptop, under qemu-user emulation)
+Network           : DISABLED during this build (interfaces: lo)
+Derived image     : codebrix-libgit2-build-aarch64
+Base image        : quay.io/pypa/manylinux_2_28_aarch64:2026.07.19-1
+                    @sha256:162c81dfd3efc710732a571717d3c916a6945ebf279e879ddee3243af96fe46f
+Container OS      : AlmaLinux 8.10 (Cerulean Leopard)
+Toolchain         : cc (GCC) 14.2.1 20250110 (Red Hat 14.2.1-11)
+                    GNU ld version 2.41-4.el8_10.1
+                    cmake version 4.4.3 (pinned) / ninja 1.13.2 (pinned)
+Container glibc   : ldd (GNU libc) 2.28
+CMake options     : -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF
+                    -DUSE_SSH=exec -DLIBGIT2_FILENAME=git2-49e408b
+                    -DUSE_HTTPS=OpenSSL-Dynamic -DUSE_BUNDLED_ZLIB=ON
+                    (= upstream build.libgit2.sh's 1.8.6-era Linux flags)
+                    -DREGEX_BACKEND=builtin (the image carries pcre-devel;
+                    see tools/libgit2-native-tools/linux/pins.env)
+                    CMAKE_C_FLAGS="-g
+                      -ffile-prefix-map=/tmp/codebrix-libgit2-src=libgit2
+                      -ffile-prefix-map=/tmp/codebrix-libgit2-build=build
+                      -ffile-prefix-map=/work=libgit2-native-tools"
+                    CMAKE_SHARED_LINKER_FLAGS="-Wl,--build-id=sha1"
+                    Release flags -O3 -DNDEBUG (CMake's); then
+                    strip --strip-unneeded
+
+Features (libgit2's CMake summary):
+                    threadsafe, nanoseconds, futimens,
+                    HTTPS using OpenSSL-Dynamic, SHA1 using CollisionDetection,
+                    SHA256 using OpenSSL-Dynamic, http-parser bundled (llhttp),
+                    regex bundled PCRE (PCRE2), xdiff bundled,
+                    SSH using OpenSSH exec support, zlib bundled, ntlmclient
+git_libgit2_features(): 1727 = THREADS | HTTPS | SSH | NSEC | HTTP_PARSER |
+                    REGEX | AUTH_NTLM | COMPRESSION | SHA1 (smoke test; the
+                    1.9 git_feature_t - 1.8.6 reported 15 for the same build)
+
+Architecture      : ELF64, AArch64
+Built as          : libgit2-49e408b.so.1.9.7, shipped as libgit2-49e408b.so
+SONAME            : libgit2-49e408b.so.1.9
+Dynamic deps      : libc.so.6 libdl.so.2 libpthread.so.0 librt.so.1
+                    - glibc only; libssl / libcrypto are dlopen()ed at run time
+                    (libssl.so.1.1, .1.0.0, .10, .3 are probed, in that order)
+glibc floor       : 2.25 (allowed <= 2.28)
+Exports           : 954 (950 git_*)
+Build-id (sha1)   : 64fb5464a41577349093d7c95ea9293d2ffaea1d
+
+Output SHA-256    : 8dd298a70646e3a427c13c84933e0e976dfcd8bf76315f4163a81d85431e3b5b
+Output size       : 2053992 bytes
+Unstripped SHA-256: 66bd14735cdee07a833a09f877415b2a5c2ee849442e95b1bbebd8428e408bd4
+Unstripped size   : 11962832 bytes
+                    (stored in tools/libgit2-native-tools/unstripped/linux-arm64/)
+
+Gate              : ELF class/machine, SONAME, no RPATH/RUNPATH/TEXTREL, 20
+                    required exports, glibc-only NEEDED (libssl/libcrypto/libz/
+                    libpcre forbidden), ldd -r clean, glibc floor, matching
+                    build-ids, 11 required feature-summary lines,
+                    OpenSSL-Dynamic probe names present, smoke test (version,
+                    features, init, blob hash, repository init/write/open, TLS
+                    init through the image's libssl.so.1.1 (OpenSSL 1.1.1k),
+                    shutdown)
+                    - EXECUTED under qemu-user; real arm64 hardware is still
+                    the last word
+                    - ALL PASSED
+
+Vendored on       : 2026-11-18
+
+LICENCE FILES BESIDE THIS ONE (all packed into runtimes/linux-arm64/native/):
+  LICENSE-Libgit2.txt  libgit2's COPYING, verbatim: GPLv2 WITH the libgit2
+                       linking exception, plus the licences of the bundled
+                       zlib, PCRE2, llhttp, ntlmclient, SHA-1 collision
+                       detection, wildmatch and others, and the LGPL-2.1 text
+  LICENSE-Xdiff.txt    the bundled xdiff's own notices (LGPL-2.1-or-later;
+                       xhistogram.c under the Eclipse Distribution License),
+                       verbatim from libgit2/deps/xdiff/ headers
+See THIRD-PARTY-NOTICES.txt in the repository root.

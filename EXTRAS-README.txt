@@ -44,9 +44,9 @@ LIBGIT2_RUN_NETWORK_TESTS=1 is set.
 
 NATIVE LIBRARIES
 ================
-    native_libraries/<rid>/          the binary (git2-5853918.dll,
-                                     libgit2-5853918.dylib or
-                                     libgit2-5853918.so),
+    native_libraries/<rid>/          the binary (git2-49e408b.dll,
+                                     libgit2-49e408b.dylib or
+                                     libgit2-49e408b.so),
                                      <binary>.provenance.txt,
                                      LICENSE-Libgit2.txt, LICENSE-Xdiff.txt,
                                      and LICENSE-MbedTls.txt in the two
@@ -55,9 +55,10 @@ NATIVE LIBRARIES
 The committed binaries the library csproj packs under runtimes/<rid>/native/,
 for win-x64, win-arm64, osx-x64, osx-arm64, linux-x64, linux-arm64,
 linux-riscv64, android-arm64 and android-x64. Each .provenance.txt records how
-that file was produced - built here from the vendored libgit2 source, or
-adopted from a recorded upstream build of the same libgit2 commit - with its
-SHA-256. The provenance files are not packed. Nothing in a dotnet build
+that file was produced from the vendored libgit2 source, with its SHA-256. A
+platform whose binary has not been built yet has no binary in its folder (the
+Windows folders also receive the DLL's import library, git2-49e408b.lib, which
+is not packed). The provenance files are not packed. Nothing in a dotnet build
 changes this folder; only the build scripts below produce new binaries, and
 copying a result in here is a deliberate step recorded in
 BUILD-PROVENANCE.txt.
@@ -89,18 +90,20 @@ short:
   windows/              build.libgit2.ps1 for win-x64 / win-arm64 (MSVC,
                         Schannel)
   macos/                build.sh for osx-arm64 / osx-x64 (SecureTransport)
-  reference-upstream/   a VERBATIM record of the upstream native-package
-                        build scripts, Dockerfiles and props the adopted
-                        Windows and macOS binaries were made with. Nothing
-                        runs, sources or reads these files; they are kept
-                        only so the recipe stays on record. Do not edit them.
+  reference-upstream/   a VERBATIM, historical record of the upstream
+                        native-package build scripts, Dockerfiles and props
+                        (as of upstream's libgit2 1.8 packaging, which the
+                        Windows and macOS scripts here are adapted from).
+                        Nothing runs, sources or reads these files. Do not
+                        edit them.
   unstripped/           the committed pre-strip twins of the binaries built
                         here (Linux and Android), with SHA256SUMS, for crash
                         triage; never shipped and never an input to a build
   output/               where every build writes its results (git-ignored
                         except its README.txt; disposable)
-  BUILD-PROVENANCE.txt  the per-RID record: who built or adopted each
-                        shipped binary, from what, with what, and the result
+  BUILD-PROVENANCE.txt  the per-RID record: who built each shipped binary,
+                        from what, with what, and the result - and which
+                        RIDs are still pending
   LICENSE-Xdiff.txt     the bundled xdiff code's own notices, verbatim from
                         its file headers; every build copies it beside its
                         binary

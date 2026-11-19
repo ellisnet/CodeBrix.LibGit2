@@ -1,13 +1,15 @@
 ================================================================================
-tools/libgit2-native-tools/linux - building libgit2-5853918.so for linux-x64,
+tools/libgit2-native-tools/linux - building libgit2-49e408b.so for linux-x64,
                                    linux-arm64 and linux-riscv64
 ================================================================================
 
->>> STATUS 2026-10-17: see ../BUILD-PROVENANCE.txt for which RIDs are built,
-    gated and adopted, with their hashes. Written and first run on the x86_64
-    LMDE 7 laptop with podman 5.4.2: linux-x64 natively, linux-arm64 and
-    linux-riscv64 under qemu-user emulation - the route CodeBrix.Sdl3's
-    sdl3-native-tools took. All three passed the gate on their first run. <<<
+>>> STATUS 2026-11-18: libgit2 1.9.7. See ../BUILD-PROVENANCE.txt for which
+    RIDs are built, gated and adopted, with their hashes. Written and first
+    run (for 1.8.6) on 2026-10-17 on the x86_64 LMDE 7 laptop with podman:
+    linux-x64 natively, linux-arm64 and linux-riscv64 under qemu-user
+    emulation - the route CodeBrix.Sdl3's sdl3-native-tools took. Re-run for
+    1.9.7 on the same laptop with the same images; all three passed the gate
+    on their first 1.9.7 run. <<<
 
 WHAT THIS IS
 --------------------------------------------------------------------------------
@@ -131,18 +133,18 @@ USAGE
     CONTAINER_ENGINE=docker ./build.sh          force an engine
     FORCE_IMAGE_REBUILD=1 ./build.sh            rebuild the derived image first
 
-  Timings: recorded per RID in ../BUILD-PROVENANCE.txt (2026-10-17, 24-core
-  x86_64 laptop). linux-x64 builds in about ten seconds once the image exists;
-  arm64 and riscv64 under qemu-user emulation take a few minutes each, and
+  Timings: recorded per RID in ../BUILD-PROVENANCE.txt (24-core x86_64
+  laptop). linux-x64 builds in about ten seconds once the image exists; arm64
+  and riscv64 under qemu-user emulation take two to three minutes each, and
   their first image build (dnf + pip under emulation) longer.
 
   DO NOT RUN TWO COPIES OF build.sh AT ONCE. Both rewrite ../output/SHA256SUMS
   at the end.
 
   Output, git-ignored (see ../output/README.txt):
-    ../output/<rid>/libgit2-5853918.so             stripped - the file the
+    ../output/<rid>/libgit2-49e408b.so             stripped - the file the
                                                    package ships
-    ../output/<rid>/unstripped/libgit2-5853918.so  the pre-strip twin (debug
+    ../output/<rid>/unstripped/libgit2-49e408b.so  the pre-strip twin (debug
                                                    info), for crash triage
     ../output/<rid>/LICENSE-Libgit2.txt            libgit2's COPYING, verbatim
     ../output/<rid>/LICENSE-Xdiff.txt              ../LICENSE-Xdiff.txt
@@ -163,11 +165,11 @@ THE BUILD, IN ONE PARAGRAPH
 ================================================================================
 container-build.sh copies ../libgit2 to scratch (there is no patch step) and
 configures libgit2's own CMakeLists.txt with LIBGIT2_CMAKE_OPTIONS from
-pins.env - upstream LibGit2Sharp.NativeBinaries' build.libgit2.sh Linux flags,
-verbatim:
+pins.env - upstream LibGit2Sharp.NativeBinaries' build.libgit2.sh Linux flags
+(its libgit2 1.8.6-era recipe; every option still exists in 1.9.7), verbatim:
 
     -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF -DUSE_SSH=exec
-    -DLIBGIT2_FILENAME=git2-5853918 -DUSE_HTTPS=OpenSSL-Dynamic
+    -DLIBGIT2_FILENAME=git2-49e408b -DUSE_HTTPS=OpenSSL-Dynamic
     -DUSE_BUNDLED_ZLIB=ON
 
 plus exactly these additions:
@@ -187,9 +189,11 @@ plus exactly these additions:
     linker                   -Wl,--build-id=sha1
 
 CMake's own Release flags (-O3 -DNDEBUG for gcc) are used unchanged. The
-result, libgit2-5853918.so.1.8.6, is collected as ONE regular file named
-libgit2-5853918.so - the name upstream ships - with its SONAME
-libgit2-5853918.so.1.8 kept as built, and stripped with --strip-unneeded.
+result, libgit2-49e408b.so.1.9.7, is collected as ONE regular file named
+libgit2-49e408b.so - upstream's naming scheme - with its SONAME
+libgit2-49e408b.so.1.9 kept as built, and stripped with --strip-unneeded.
+(libgit2 1.9 sets CMAKE_C_STANDARD 90 for every target, bundled dependencies
+included; that is upstream's default and is not overridden.)
 (libgit2 also builds its `git2` CLI by default on Linux, as upstream's build
 does; it is not shipped.)
 
@@ -218,13 +222,13 @@ A build that fails ANY of these exits non-zero and must not be adopted.
 
   1. ELF class and machine - ELF64 and x86-64 / AArch64 / RISC-V to match the
      RID (readelf -h). Catches the wrong file under the wrong RID.
-  2. SONAME - exactly libgit2-5853918.so.1.8.
+  2. SONAME - exactly libgit2-49e408b.so.1.9.
   3. No RPATH or RUNPATH (the library lands in somebody else's application
      folder), and no TEXTREL.
   4. Required exports - the REQUIRED_SYMBOLS in pins.env (git_libgit2_init,
      git_repository_open, git_clone, git_remote_connect, git_remote_push,
-     git_commit_create ...); the total export count is recorded (944, the same
-     as every upstream 2.0.324 binary).
+     git_commit_create ...); the total export count is recorded (954 for
+     1.9.7; 944 for 1.8.6).
   5. Dependencies - NEEDED must be a subset of ALLOWED_DEPS in pins.env
      (libc / libm / libpthread / libdl / librt and the dynamic loader: glibc
      only). libssl, libcrypto, libz, libpcre, libssh2 and friends are named
@@ -241,8 +245,11 @@ A build that fails ANY of these exits non-zero and must not be adopted.
      (libssl.so.1.1, .so.3, .so.10, .so.1.0.0) are strings in the binary.
  10. Smoke test - linux/smoke-test.c, compiled in the container, dlopen()s the
      STAGED (stripped) library the way .NET does, resolves 13 entry points,
-     checks git_libgit2_version() == 1.8.6 and git_libgit2_features() == 15
-     (THREADS | HTTPS | SSH | NSEC), git_libgit2_init(), hashes a blob with
+     checks git_libgit2_version() == 1.9.7 and git_libgit2_features() == 1727
+     (THREADS | HTTPS | SSH | NSEC | HTTP_PARSER | REGEX | AUTH_NTLM |
+     COMPRESSION | SHA1 - libgit2 1.9 widened git_feature_t, so the same
+     build that reported 15 under 1.8.6 reports 1727; EXPECTED_FEATURES in
+     pins.env), git_libgit2_init(), hashes a blob with
      git_odb_hash() (the bundled SHA-1), creates a repository in a temporary
      folder, writes the blob into it and opens it again, then calls
      GIT_OPT_SET_SSL_CERT_LOCATIONS with the image's CA bundle - which is the
@@ -342,25 +349,25 @@ ADOPTING A BUILT BINARY INTO THE PACKAGE
 
   2. Copy the library and its licence files into the package's native tree:
 
-       cp ../output/<rid>/libgit2-5853918.so  ../../../native_libraries/<rid>/
+       cp ../output/<rid>/libgit2-49e408b.so  ../../../native_libraries/<rid>/
        cp ../output/<rid>/LICENSE-Libgit2.txt ../../../native_libraries/<rid>/
        cp ../output/<rid>/LICENSE-Xdiff.txt   ../../../native_libraries/<rid>/
 
      <rid> is linux-x64, linux-arm64 or linux-riscv64. The file must keep the
-     name libgit2-5853918.so - the managed wrapper loads exactly that name.
+     name libgit2-49e408b.so - the managed wrapper loads exactly that name.
      The licence copies are not optional: libgit2's licence and the bundled
      dependencies' notices travel with the binary, and the package packs them
      into runtimes/<rid>/native/ beside it.
 
-  3. Update ../../../native_libraries/<rid>/libgit2-5853918.so.provenance.txt
+  3. Update ../../../native_libraries/<rid>/libgit2-49e408b.so.provenance.txt
      from BUILD-INFO.txt (it is not packed; it is the in-repo record beside the
      binary).
 
   4. Store the unstripped twin in the SAME change:
 
        mkdir -p ../unstripped/<rid>
-       cp ../output/<rid>/unstripped/libgit2-5853918.so ../unstripped/<rid>/
-       ( cd ../unstripped && sha256sum <rid>/libgit2-5853918.so ) # replace
+       cp ../output/<rid>/unstripped/libgit2-49e408b.so ../unstripped/<rid>/
+       ( cd ../unstripped && sha256sum <rid>/libgit2-49e408b.so ) # replace
                                                  # that RID's line in SHA256SUMS
 
      See ../unstripped/README.txt for the rule and the build-id check.

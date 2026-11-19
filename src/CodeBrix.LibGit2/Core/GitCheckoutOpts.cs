@@ -7,14 +7,10 @@ namespace CodeBrix.LibGit2.Core; //was previously: LibGit2Sharp.Core;
 internal enum CheckoutStrategy
 {
     /// <summary>
-    /// Default is a dry run, no actual updates.
-    /// </summary>
-    GIT_CHECKOUT_NONE = 0,
-
-    /// <summary>
     /// Allow safe updates that cannot overwrite uncommited data.
+    /// This is the default (libgit2 1.9 made it the zero value).
     /// </summary>
-    GIT_CHECKOUT_SAFE = (1 << 0),
+    GIT_CHECKOUT_SAFE = 0,
 
     /// <summary>
     /// Allow update of entries in working dir that are modified from HEAD.
@@ -104,6 +100,12 @@ internal enum CheckoutStrategy
     /// Normally checkout writes the index upon completion; this prevents that.
     /// </summary>
     GIT_CHECKOUT_DONT_WRITE_INDEX = (1 << 23),
+
+    /// <summary>
+    /// Do not do a checkout: no files are updated and no callbacks fire
+    /// (libgit2 1.9 moved this from the zero value to its own bit).
+    /// </summary>
+    GIT_CHECKOUT_NONE = (1 << 30),
 
     // THE FOLLOWING OPTIONS ARE NOT YET IMPLEMENTED
 

@@ -1163,7 +1163,8 @@ public sealed class Repository : IRepository
         var options = new GitCheckoutOpts
         {
             version = 1,
-            checkout_strategy = CheckoutStrategy.GIT_CHECKOUT_REMOVE_UNTRACKED
+            checkout_strategy = CheckoutStrategy.GIT_CHECKOUT_NONE
+                                 | CheckoutStrategy.GIT_CHECKOUT_REMOVE_UNTRACKED
                                  | CheckoutStrategy.GIT_CHECKOUT_ALLOW_CONFLICTS,
         };
 

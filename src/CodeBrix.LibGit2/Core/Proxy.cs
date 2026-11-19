@@ -3356,7 +3356,11 @@ internal class Proxy
     /// </summary>
     public static BuiltInFeatures git_libgit2_features()
     {
-        return (BuiltInFeatures)NativeMethods.git_libgit2_features();
+        // libgit2 1.9 reports further git_feature_t bits (HTTP parser, regex, SHA1 ...) that
+        // BuiltInFeatures does not define; keep only the ones it documents.
+        const BuiltInFeatures known = BuiltInFeatures.Threads | BuiltInFeatures.Https | BuiltInFeatures.Ssh | BuiltInFeatures.NSec;
+
+        return (BuiltInFeatures)NativeMethods.git_libgit2_features() & known;
     }
 
     // C# equivalent of libgit2's git_libgit2_opt_t

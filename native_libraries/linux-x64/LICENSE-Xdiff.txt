@@ -7,7 +7,8 @@ file) carries the full text of the GNU Lesser General Public License 2.1 but
 not the xdiff files' own copyright notices, and not the Eclipse Distribution
 License under which one of them (xhistogram.c) is licensed. They are reproduced
 here, VERBATIM, from the file headers in libgit2/deps/xdiff/ at libgit2 commit
-5853918c4c6a7b12f8becf4bd11ff4362ebb9020 (1.8.6):
+49e408b3208bc3093757a1c2db938d3590f3f412 (1.9.7; the four headers are unchanged
+from 1.8.6):
 
   * xdiff.h - the LibXDiff notice, as carried (with the year range of the
     respective file) by xdiff.h, xdiffi.c/.h, xemit.c/.h, xinclude.h,

@@ -63,9 +63,9 @@ REPOSITORY LAYOUT
       Resources/                     the fixture repositories (see TESTING)
 
     native_libraries/<rid>/          the committed native binaries, one folder
-                                     per RID: the binary (git2-5853918.dll,
-                                     libgit2-5853918.dylib or
-                                     libgit2-5853918.so),
+                                     per RID: the binary (git2-49e408b.dll,
+                                     libgit2-49e408b.dylib or
+                                     libgit2-49e408b.so),
                                      <binary>.provenance.txt,
                                      LICENSE-Libgit2.txt (libgit2's COPYING,
                                      verbatim), LICENSE-Xdiff.txt, and in the
@@ -86,10 +86,18 @@ REPOSITORY LAYOUT
                                      MAINTAINER-README.txt, README-INDEX.txt,
                                      README.md and THIRD-PARTY-NOTICES.txt;
                                      its Tests folder carries the test project
-    global.json                      selects the Microsoft.Testing.Platform
-                                     test runner; pins no SDK
+    global.json                      pins the .NET SDK (10.0.404, rolling
+                                     forward to the latest feature band, no
+                                     prereleases) and selects the
+                                     Microsoft.Testing.Platform test runner;
+                                     the family's standard file for
+                                     repositories with no Android projects
     .gitignore                       the family .gitignore (see the NOTES on
                                      the nested one in tools/)
+    .gitattributes                   LF line endings for this repository's
+                                     own files; line-ending handling switched
+                                     OFF for the vendored trees and the test
+                                     resources (see NOTES)
     LICENSE                          MIT
     icon-codebrix-128.png            the package icon
     README.md                        the nuget.org / GitHub page (packed)
@@ -140,10 +148,9 @@ TESTING
 THE TEST RUNNER IS Microsoft.Testing.Platform (MTP), selected by global.json
 at the repo root:
 
-    { "test": { "runner": "Microsoft.Testing.Platform" } }
+    "test": { "runner": "Microsoft.Testing.Platform" }
 
-That file does NOT pin an SDK version; it exists solely to select the runner.
-Keep it committed. MTP output ends in a "Test run summary:" block. If
+The same file pins the .NET SDK (see REPOSITORY LAYOUT). Keep it committed. MTP output ends in a "Test run summary:" block. If
 `dotnet test --solution` ever reports zero tests, build and run the test
 assembly directly and read ITS counts:
 
@@ -250,42 +257,51 @@ Ellis and contributors. Jeremy publishes.
 
 NATIVE LIBRARIES
 ================
-The binary name keeps the libgit2 commit prefix - git2-5853918 (Windows
-git2-5853918.dll, macOS libgit2-5853918.dylib, Linux/Android
-libgit2-5853918.so) - exactly the name upstream LibGit2Sharp uses, so this
+The binary name keeps the libgit2 commit prefix - git2-49e408b (Windows
+git2-49e408b.dll, macOS libgit2-49e408b.dylib, Linux/Android
+libgit2-49e408b.so) - the naming scheme upstream LibGit2Sharp uses, so this
 library never collides with an upstream LibGit2Sharp copy or a system libgit2
 loaded into the same process. The managed side names it once, in
 src/CodeBrix.LibGit2/Core/NativeDllName.cs.
+
+EVERY binary is built from the vendored source with this repository's own
+tooling. Nothing is adopted from another project: upstream LibGit2Sharp (and
+its native-binaries package) is still on libgit2 1.8, so for libgit2 1.9 there
+is no upstream build to take.
 
 Where each shipped binary comes from (full per-RID record, hashes and gate
 results: tools/libgit2-native-tools/BUILD-PROVENANCE.txt; per-file record:
 native_libraries/<rid>/<binary>.provenance.txt):
 
   linux-x64, linux-arm64, linux-riscv64
-      BUILT IN THIS REPOSITORY by tools/libgit2-native-tools/linux/build.sh
-      in the digest-pinned manylinux containers (x86_64 native; aarch64 and
-      riscv64 under qemu-user emulation), with the network disabled, from the
-      vendored libgit2 source. HTTPS = OpenSSL loaded at run time
-      (OpenSSL-Dynamic), SSH = exec of the system ssh, bundled zlib, PCRE2,
-      llhttp and xdiff. A verification gate (ELF, SONAME, exports, NEEDED,
-      glibc floor, build-id, feature summary, smoke test) runs on every
-      build.
+      BUILT on the Linux development machine by
+      tools/libgit2-native-tools/linux/build.sh in the digest-pinned manylinux
+      containers (x86_64 native; aarch64 and riscv64 under qemu-user
+      emulation), with the network disabled. HTTPS = OpenSSL loaded at run
+      time (OpenSSL-Dynamic), SSH = exec of the system ssh, bundled zlib,
+      PCRE2, llhttp and xdiff. A verification gate (ELF, SONAME, exports,
+      NEEDED, glibc floor, build-id, feature summary, smoke test) runs on
+      every build.
   android-arm64, android-x64
-      BUILT IN THIS REPOSITORY by tools/libgit2-native-tools/android/build.py
-      with the pinned Android NDK, ANDROID_PLATFORM 33, 16 KiB page-size link
-      flags, HTTPS through Mbed TLS built first from the vendored
-      tools/libgit2-native-tools/mbedtls/ and linked STATICALLY, and no SSH
-      transport.
-  win-x64, win-arm64, osx-x64, osx-arm64
-      ADOPTED, unchanged, from the LibGit2Sharp.NativeBinaries 2.0.324
-      package on nuget.org, which built them from the same libgit2 commit
-      (Windows: MSVC, HTTPS via Schannel; macOS: SecureTransport; both with
-      SSH = exec). The adopted macOS binaries carry a minimum macOS of 14.0.
-      tools/libgit2-native-tools/windows/build.libgit2.ps1 and
-      tools/libgit2-native-tools/macos/build.sh rebuild them from the
-      vendored source; they have NOT yet been run - that needs Jeremy's
-      Windows machine and Mac. When they are, the binaries, the
-      .provenance.txt files and BUILD-PROVENANCE.txt change together.
+      BUILT on the Linux development machine by
+      tools/libgit2-native-tools/android/build.py with the pinned Android NDK,
+      ANDROID_PLATFORM 33, 16 KiB page-size link flags, HTTPS through Mbed TLS
+      built first from the vendored tools/libgit2-native-tools/mbedtls/ and
+      linked STATICALLY, and no SSH transport.
+  win-x64, win-arm64
+      TO BE BUILT on Jeremy's Windows x64 machine by
+      tools/libgit2-native-tools/windows/build.libgit2.ps1 (MSVC, static C
+      runtime, HTTPS via Schannel, SSH = exec). See BUILDING THE WINDOWS AND
+      MACOS BINARIES below.
+  osx-arm64, osx-x64
+      TO BE BUILT on Jeremy's Apple Silicon Mac by
+      tools/libgit2-native-tools/macos/build.sh (Apple clang, HTTPS via
+      SecureTransport, SSH = exec). See the same section.
+
+A RID that has not been built yet has NO binary in native_libraries/<rid>/
+(only its licence files). The csproj packs each native file only when it
+exists, so the package still builds - and silently lacks that platform. DO NOT
+PUBLISH until all nine are present (PACKAGING AND PUBLISHING has the check).
 
 How to rebuild one RID or all of them: tools/libgit2-native-tools/README.txt
 and the per-platform README.txt it points to. Build tools (cmake, ninja,
@@ -293,31 +309,222 @@ compilers, podman, the NDK, Visual Studio, Xcode) come from their normal
 sources and are not in the repository; everything compiled is.
 
 The pins in force (deliberate, change only together):
-    libgit2           5853918c4c6a7b12f8becf4bd11ff4362ebb9020 (tag v1.8.6)
+    libgit2           49e408b3208bc3093757a1c2db938d3590f3f412 (tag v1.9.7)
     LibGit2Sharp      master @ eaa698d078941fd5e3cc82b59b885cd35d8cc0f8 (the
-                      managed source this port came from; it targets that
-                      libgit2 commit)
+                      managed source this port came from; upstream targets
+                      libgit2 1.8 - see THE INTEROP AND LIBGIT2 1.9 below)
     Mbed TLS          tag v3.6.7 (Android only)
-    adopted natives   LibGit2Sharp.NativeBinaries 2.0.324
 
 BUMPING LIBGIT2 touches all of these at once:
   - the vendored tree tools/libgit2-native-tools/libgit2/ (replaced whole,
-    never patched) and tools/libgit2-native-tools/UPSTREAM.txt;
+    never patched, WITHOUT upstream's .github/ folder - this repository
+    carries no workflow files, vendored ones included) and
+    tools/libgit2-native-tools/UPSTREAM.txt;
   - the build pins (linux/pins.env, android/pins.json; the Windows and macOS
-    scripts read the Linux pins) - commit, version and the git2-<short>
-    file name;
+    scripts read the Linux pins) - commit, version, the git2-<short> file
+    name, and the expected feature mask;
   - src/CodeBrix.LibGit2/Core/NativeDllName.cs (the native name) and
     src/CodeBrix.LibGit2/AssemblyCommitIds.cs (LibGit2CommitSha);
   - every native item in src/CodeBrix.LibGit2/CodeBrix.LibGit2.csproj (the
     file names are spelled out per RID);
-  - EVERY native binary, rebuilt (or re-adopted) for all nine RIDs, with new
+  - EVERY native binary, rebuilt for all nine RIDs - five on the Linux
+    machine, two on the Windows machine, two on the Mac - with new
     .provenance.txt files and BUILD-PROVENANCE.txt sections;
-  - the managed interop (Core/NativeMethods.cs and the native structs) if
-    the C API changed - in practice, port the matching upstream LibGit2Sharp
-    changes, since its interop tracks one libgit2 commit;
+  - the managed interop, by the audit described under THE INTEROP AND
+    LIBGIT2 1.9;
   - THIRD-PARTY-NOTICES.txt (commit, licence texts, bundled dependencies).
 A binary from a different libgit2 commit under the old name loads and then
 misbehaves; never mix commits.
+
+
+THE INTEROP AND LIBGIT2 1.9
+===========================
+The managed source was ported from LibGit2Sharp, whose interop is written
+against libgit2 1.8. Upstream has not moved to 1.9, so there was nothing to
+port: the interop was adapted here (2026-11-18) by comparing every bound
+function, struct, callback, enum and *_VERSION constant between the 1.8.6 and
+1.9.7 headers. If upstream LibGit2Sharp later publishes its own 1.9 support,
+compare it with what is here before taking it.
+
+What differed and was changed (all in src/CodeBrix.LibGit2/):
+  - Core/GitBlame.cs          git_blame_hunk gained final_committer,
+                              orig_committer and summary. With the old layout
+                              a blame reads a bad pointer and the process
+                              crashes.
+  - Core/GitRemoteCallbacks.cs  git_remote_callbacks gained a trailing
+                              update_refs slot (left null, so libgit2 falls
+                              back to update_tips). Without it libgit2 reads
+                              past the struct.
+  - Core/GitConfigEntry.cs    git_config_entry lost its trailing free member.
+  - Core/GitCheckoutOpts.cs   the checkout strategy values changed:
+                              GIT_CHECKOUT_SAFE is now 0 and GIT_CHECKOUT_NONE
+                              is 1 << 30. Clone-without-checkout sends exactly
+                              NONE (libgit2 tests for equality), and
+                              Repository.RemoveUntrackedFiles sends NONE with
+                              its flags so tracked files are still left alone.
+  - Core/Proxy.cs             git_libgit2_features() returns more bits in 1.9;
+                              they are masked to the four the public
+                              BuiltInFeatures enum defines, so the public
+                              value is unchanged.
+No public API changed. All 352 bound functions exist in 1.9.7 with the same
+signatures. Three tests were added that fail without these changes (in
+CloneTests, CleanTests and BlameTests), and GlobalSettingsTests.SetExtensions
+lists the two extensions libgit2 1.9 added.
+
+Known difference in behaviour, not covered by a test: with the default file
+conflict strategy, cherry-pick and revert now pass a strategy of 0, which
+libgit2 1.9 replaces with its own default (it adds "allow conflicts"); under
+1.8 the managed code passed a non-zero "safe" value and libgit2 kept it. 1.9
+has no non-zero plain "safe" value, so the old behaviour cannot be reproduced
+exactly. libgit2 still refuses when uncommitted changes would be overwritten.
+
+When auditing a future libgit2: a struct that is one field off corrupts memory
+silently and may pass most tests. Check every [StructLayout] type and every
+hard-coded native value against the new headers, not only the functions.
+
+
+BUILDING THE WINDOWS AND MACOS BINARIES
+=======================================
+Four of the nine binaries cannot be built on the Linux development machine.
+The two scripts below were written on Linux and HAVE NEVER BEEN RUN (as of
+2026-11-18). Expect to fix something on the first real run of each; when that
+happens fix the script, note what was wrong in
+tools/libgit2-native-tools/BUILD-PROVENANCE.txt, and update the STATUS block
+at the top of that platform's README.txt.
+
+Before either: pull the repository so the machine has the 1.9.7 tree, pins and
+scripts. The scripts download nothing and install nothing; they stop with a
+message when a prerequisite is missing.
+
+ON THE WINDOWS x64 MACHINE (builds win-x64 AND win-arm64)
+----------------------------------------------------------
+Detailed reference: tools/libgit2-native-tools/windows/README.txt.
+
+ 1. Prerequisites (once):
+      - Visual Studio 2022 or newer (or its Build Tools) with the workload
+        "Desktop development with C++";
+      - for win-arm64, ALSO the individual component "MSVC v14x - VS 20xx C++
+        ARM64/ARM64EC build tools (Latest)" (Visual Studio Installer ->
+        Modify -> Individual components). Without it the arm64 build stops;
+      - CMake 3.5.1 or newer on PATH (winget install Kitware.CMake), or use a
+        "Developer PowerShell for VS", which has Visual Studio's own copy;
+      - PowerShell 5.1 (built in) or 7. If scripts are blocked, run once in
+        that window:  Set-ExecutionPolicy -Scope Process Bypass
+
+ 2. Build both, from PowerShell:
+        cd tools\libgit2-native-tools\windows
+        .\build.libgit2.ps1 -x64 -arm64
+    Each architecture is configured, built, and checked by the script's gate
+    (correct machine type; all required exports; operating-system imports
+    only - a Visual C++ runtime import means the static runtime did not take;
+    the feature summary; the import library). Results are written to
+    tools\libgit2-native-tools\output\win-x64\ and ...\win-arm64\.
+
+ 3. What can and cannot be tested there:
+      - win-x64 is smoke-tested by the script (a small C program that loads
+        the DLL, checks version 1.9.7 and the feature mask, and creates a
+        repository).
+      - win-arm64 is CROSS-built. An x64 machine cannot run it, so the script
+        builds the smoke test and says where it is, but does not run it. It
+        stays unexecuted until someone runs it on ARM64 Windows; record that
+        in its provenance.
+      - The expected feature mask in the script (1983) was DERIVED from the
+        libgit2 source, never observed. If the smoke test reports another
+        number, find out which feature differs before changing the script.
+      - The list of allowed imported DLLs was written from the 1.8.6 builds.
+        If 1.9.7 imports another Windows system DLL the gate stops; that is
+        something to look at and record, then add to the list.
+
+ 4. Adopt each result (for win-x64, and the same for win-arm64):
+      - read output\win-x64\BUILD-INFO.txt;
+      - copy git2-49e408b.dll AND git2-49e408b.lib from output\win-x64\ to
+        native_libraries\win-x64\ (the two LICENSE-*.txt files there are
+        already current). The .lib is the DLL's import library: native tools
+        (the CodeBrix.WebPlatform dx build is one) link against it. It is
+        committed but NOT packed into the NuGet package;
+      - write native_libraries\win-x64\git2-49e408b.dll.provenance.txt from
+        BUILD-INFO.txt, including the .lib's size and SHA-256 (the files in
+        native_libraries\linux-x64\ are the model);
+      - replace that RID's PENDING section in
+        tools\libgit2-native-tools\BUILD-PROVENANCE.txt.
+
+ 5. Run the managed tests on Windows (they exercise the x64 DLL):
+        dotnet build CodeBrix.LibGit2.slnx -c Release
+        dotnet test --solution CodeBrix.LibGit2.slnx -c Release
+    The interop changes for libgit2 1.9 have only ever been run on Linux, so
+    this run is the first proof on Windows. The Linux result to compare with:
+    1381 tests, 0 failed, 34 skipped.
+
+ON THE APPLE SILICON MAC (builds osx-arm64 AND osx-x64)
+--------------------------------------------------------
+Detailed reference: tools/libgit2-native-tools/macos/README.txt.
+
+ 1. Prerequisites (once):
+      - Xcode or the Command Line Tools:  xcode-select --install
+      - CMake 3.5.1 or newer on PATH:  brew install cmake  (or CMake.app with
+        its command-line tools installed);
+      - optional, to RUN the Intel binary's smoke test:
+          softwareupdate --install-rosetta
+
+ 2. THE MINIMUM macOS IS 14.0, the same as the binaries being replaced. The
+    rule: a new binary must not require a newer macOS than the old one did.
+    The script passes that deployment target by default, and its gate FAILS
+    a binary whose recorded minimum ("minos") is anything else - without the
+    setting, a build on a current Mac would require that Mac's own, newer,
+    macOS. Leave it alone unless the floor is being changed on purpose
+    (DEPLOYMENT_TARGET=<version> ./build.sh); the minimum is recorded in
+    BUILD-INFO.txt and belongs in the provenance files and
+    BUILD-PROVENANCE.txt.
+
+ 3. Build both, from Terminal:
+        cd tools/libgit2-native-tools/macos
+        ./build.sh
+    (./build.sh arm64 or ./build.sh x64 builds one.) Each slice is built
+    separately - two thin files, not one universal file - and checked by the
+    gate (exactly the requested architecture; links only system libraries;
+    all required exports; the minimum macOS; the feature summary). Results
+    are written to tools/libgit2-native-tools/output/osx-arm64/ and
+    .../osx-x64/.
+
+ 4. What can and cannot be tested there:
+      - osx-arm64 is smoke-tested natively.
+      - osx-x64 is cross-built; its smoke test runs only if Rosetta 2 is
+        installed. Under Rosetta it is still not real Intel hardware; say so
+        in its provenance.
+      - The expected feature mask in the script (1791) was DERIVED from the
+        libgit2 source, never observed. If the smoke test reports another
+        number, find out which feature differs before changing the script.
+      - The arm64 file is signed ad hoc by the linker; the x64 file is
+        unsigned. Neither is notarised; .NET loads them by path, which does
+        not need it.
+
+ 5. Adopt each result (for osx-arm64, and the same for osx-x64):
+      - read output/osx-arm64/BUILD-INFO.txt (the minimum macOS above all);
+      - copy libgit2-49e408b.dylib to native_libraries/osx-arm64/ (the two
+        LICENSE-*.txt files there are already current);
+      - write native_libraries/osx-arm64/libgit2-49e408b.dylib.provenance.txt
+        from BUILD-INFO.txt;
+      - replace that RID's PENDING section in
+        tools/libgit2-native-tools/BUILD-PROVENANCE.txt.
+
+ 6. Run the managed tests on the Mac (they exercise the arm64 dylib):
+        dotnet build CodeBrix.LibGit2.slnx -c Release
+        dotnet test --solution CodeBrix.LibGit2.slnx -c Release
+    First proof of the 1.9 interop on macOS, including the one binding that
+    is special there (the variadic options call on Apple Silicon).
+
+AFTER BOTH MACHINES
+-------------------
+  - native_libraries/ must hold a binary in all nine RID folders, each with
+    its .provenance.txt, and BUILD-PROVENANCE.txt must have no PENDING
+    section left.
+  - Commit the binaries, the .lib files, the provenance files and any script
+    fixes together.
+  - Build the package and check it (PACKAGING AND PUBLISHING): unzip the
+    .nupkg and confirm runtimes/<rid>/native/ exists for all nine RIDs. Only
+    then publish.
+  - Consumers that pin the old package (CodeBrix.RustTools.CrateBuilder is
+    one) need only the version bump: no public API changed.
 
 
 CODING CONVENTIONS
@@ -358,13 +565,15 @@ PROVENANCE / VENDORED SOURCES
     Namespace mapping LibGit2Sharp -> CodeBrix.LibGit2,
     LibGit2Sharp.Core -> CodeBrix.LibGit2.Core, LibGit2Sharp.Handlers ->
     CodeBrix.LibGit2.Handlers, LibGit2Sharp.Tests -> CodeBrix.LibGit2.Tests.
-  - tools/libgit2-native-tools/libgit2/: libgit2 at the pinned commit, full
-    and unmodified (GPLv2 with the linking exception).
+  - tools/libgit2-native-tools/libgit2/: libgit2 at the pinned commit,
+    unmodified, without upstream's .github/ folder (GPLv2 with the linking
+    exception).
   - tools/libgit2-native-tools/mbedtls/: Mbed TLS v3.6.7 with its
     framework/ submodule, unmodified (Apache-2.0 OR GPL-2.0-or-later; taken
     under Apache-2.0).
   - tools/libgit2-native-tools/reference-upstream/: verbatim copies of
-    LibGit2Sharp.NativeBinaries' build files (MIT), a record only.
+    LibGit2Sharp.NativeBinaries' build files (MIT) as of its libgit2 1.8
+    packaging; a historical record only.
   - tools/libgit2-native-tools/UPSTREAM.txt records the URL, commit, copy
     command and tree checksum of each vendored tree. THIRD-PARTY-NOTICES.txt
     has the full notices and licence texts.
@@ -374,7 +583,7 @@ NOTES
 =====
   - Native library resolution (src/CodeBrix.LibGit2/Core/NativeMethods.cs)
     tries, in order: GlobalSettings.NativeLibraryPath (a folder; the file is
-    looked for as <folder>/git2-5853918 + .dll/.so/.dylib, i.e. WITHOUT the
+    looked for as <folder>/git2-49e408b + .dll/.so/.dylib, i.e. WITHOUT the
     "lib" prefix the Linux/macOS binaries have), then the normal .NET probing
     (deps.json native assets, the assembly and application folders), then on
     Linux a scan of <app>/runtimes/*-<arch>/native/. A PackageReference
@@ -388,6 +597,13 @@ NOTES
     the family .gitignore ignores names that occur inside the vendored trees
     and the build pins (*.env, Debug/, ARM64/, *.obj ...). Read its comment
     before touching it.
+  - .gitattributes sets LF for this repository's own files and switches
+    line-ending handling OFF (-text) for tools/libgit2-native-tools/libgit2/,
+    .../mbedtls/, .../reference-upstream/ and
+    tests/CodeBrix.LibGit2.Tests/Resources/. Those folders hold more than a
+    thousand files that are CRLF or mixed ON PURPOSE (upstream sources and
+    test fixtures whose line endings are what is being tested). Never add a
+    rule that normalises them; each also has .gitattributes files of its own.
   - The AI-agent pointer stubs at the repo root (AGENTS.md, CLAUDE.md,
     .clinerules, .cursorrules, .cursor/rules/agent-readme.mdc,
     .windsurfrules, .github/copilot-instructions.md, .junie/guidelines.md)

@@ -2,13 +2,20 @@
 tools/libgit2-native-tools/reference-upstream - HOW UPSTREAM BUILT 2.0.324
 ================================================================================
 
-A RECORD, NOT A TOOL. These are VERBATIM copies of the build files of upstream
-LibGit2Sharp.NativeBinaries at commit 2b95030f15e55dfe70e9fdbb2b3d304a5c95ad23
-(2026-07-20) - the commit the 2.0.324 package's nuspec names, and the package
-whose win-* and osx-* binaries this repository currently ships (see
-../BUILD-PROVENANCE.txt). They are kept so that anyone can see, a year from
-now, exactly what recipe produced the adopted binaries and what our own scripts
-were adapted from.
+A HISTORICAL RECORD, NOT A TOOL. These are VERBATIM copies of the build files
+of upstream LibGit2Sharp.NativeBinaries at commit
+2b95030f15e55dfe70e9fdbb2b3d304a5c95ad23 (2026-07-20) - the commit the 2.0.324
+package's nuspec names. That package carried libgit2 1.8.6, and this
+repository shipped its win-* and osx-* binaries until 2026-11-18.
+
+THERE IS NO UPSTREAM PACKAGING FOR LIBGIT2 1.9. Upstream
+LibGit2Sharp.NativeBinaries is still on 1.8.6; nothing here describes a 1.9
+build, and nothing for 1.9 was or could be adopted from upstream. This
+repository now ships libgit2 1.9.7 built by its own scripts in ../linux,
+../android, ../windows and ../macos. These files are kept so that anyone can
+see, a year from now, exactly what recipe our scripts were adapted from (their
+cmake flags are carried forward unchanged) and how the 1.8.6 binaries this
+repository once adopted were made.
 
 NO SCRIPT IN THIS REPOSITORY RUNS, SOURCES OR READS ANY FILE HERE. Our builds
 are ../linux/, ../android/, ../windows/ and ../macos/. In particular the
@@ -19,7 +26,8 @@ are a record of upstream as it was.
 
   build.libgit2.sh          upstream's Linux + macOS build (cmake flags; the
                             Linux branch's flags are ../linux/pins.env's
-                            LIBGIT2_CMAKE_OPTIONS, plus -DREGEX_BACKEND=builtin)
+                            LIBGIT2_CMAKE_OPTIONS, plus -DREGEX_BACKEND=builtin,
+                            with the file name moved to git2-49e408b)
   build.libgit2.ps1         upstream's Windows build (-x86 / -x64 / -arm64,
                             Schannel); ../windows/build.libgit2.ps1 is adapted
                             from it
@@ -34,8 +42,10 @@ are a record of upstream as it was.
                             (libgit2_filename = git2-5853918) to MSBuild - the
                             managed side here replaces this with a constant
   nuget.package/libgit2/libgit2_hash.txt
-                            the pinned libgit2 commit,
-                            5853918c4c6a7b12f8becf4bd11ff4362ebb9020
+                            upstream's pinned libgit2 commit,
+                            5853918c4c6a7b12f8becf4bd11ff4362ebb9020 (1.8.6 -
+                            NOT the commit this repository builds, which is
+                            49e408b, 1.9.7)
 
 Copied 2026-10-17 from the read-only clone ~/GitHome/libgit2sharp.nativebinaries
 with `cp -p`. Upstream's licence for these files: MIT, Copyright (c)

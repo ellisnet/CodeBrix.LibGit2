@@ -1,13 +1,16 @@
 <#
 =============================================================================================
-build.libgit2.ps1 - build git2-5853918.dll for win-x64 and/or win-arm64, from this repository
+build.libgit2.ps1 - build git2-49e408b.dll for win-x64 and/or win-arm64, from this repository
 =============================================================================================
 
-  NEVER YET RUN. Written on Linux on 2026-10-17, adapted from upstream
+  NEVER YET RUN. Written on Linux on 2026-10-17 for libgit2 1.8.6, adapted from upstream
   libgit2sharp.nativebinaries' build.libgit2.ps1 (a verbatim copy is in
-  ..\reference-upstream\build.libgit2.ps1). Expect to fix something on the first real run;
-  fix it IN THE SCRIPT and record it in ..\BUILD-PROVENANCE.txt, then rewrite this header and
-  README.txt's status block with what the run established.
+  ..\reference-upstream\build.libgit2.ps1 - upstream's 1.8.6-era recipe; upstream has no
+  packaging for libgit2 1.9). Re-pointed at libgit2 1.9.7 on 2026-11-18, still on Linux and
+  still unrun: the win-x64 / win-arm64 binaries are PENDING until this script is run on a
+  Windows machine. Expect to fix something on the first real run; fix it IN THE SCRIPT and
+  record it in ..\BUILD-PROVENANCE.txt, then rewrite this header and README.txt's status
+  block with what the run established.
 
 USAGE (from a PowerShell prompt; the script finds Visual Studio and cmake itself):
 
@@ -20,8 +23,9 @@ USAGE (from a PowerShell prompt; the script finds Visual Studio and cmake itself
 WHAT IT KEEPS FROM UPSTREAM, EXACTLY
   * the cmake arguments:  -A x64|ARM64 -D USE_SSH=exec -D USE_HTTPS=Schannel
                           -D BUILD_TESTS=OFF|ON -D BUILD_CLI=OFF
-                          -D LIBGIT2_FILENAME=git2-5853918
-    then  cmake --build . --config Release  (Visual Studio generator, MSVC, libgit2's own
+                          -D LIBGIT2_FILENAME=git2-49e408b   (from ..\linux\pins.env)
+    then  cmake --build . --config Release
+    (every one of these options exists, with the same meaning, in libgit2 1.9.7's CMake)  (Visual Studio generator, MSVC, libgit2's own
     defaults: static CRT /MT, /O2 /GL, /LTCG). HTTPS is SCHANNEL - upstream's Windows recipe
     does not use the WinHTTP backend, and neither does this one (README.txt, "WHY SCHANNEL").
   * the -test switch (BUILD_TESTS=ON + ctest -V), which works because ..\libgit2 is vendored
@@ -35,6 +39,10 @@ WHAT IT CHANGES, AND WHY
     one place every platform reads them from;
   * output goes to ..\output\win-<arch>\ (not nuget.package\runtimes), with LICENSE-Libgit2.txt
     (libgit2's COPYING), LICENSE-Xdiff.txt, BUILD-INFO.txt and SHA256SUMS.txt beside the DLL;
+  * the MSVC IMPORT LIBRARY the link writes next to the DLL (git2-49e408b.lib) is kept and
+    copied to the output too, and gated (machine, exports): a native tool that links against
+    the DLL needs it. It is adopted into native_libraries\win-<arch>\ but NOT packed into the
+    NuGet package (README.txt, THE IMPORT LIBRARY);
   * a verification gate runs before anything is called a result (README.txt, THE GATE).
   * no win-x86: CodeBrix.LibGit2 ships win-x64 and win-arm64 only.
 
@@ -90,12 +98,19 @@ function Read-Pins {
 
 $Pins = Read-Pins (Join-Path $ToolsDir 'linux\pins.env')
 $DllName = "$($Pins.LIBGIT2_FILENAME).dll"
+$LibName = "$($Pins.LIBGIT2_FILENAME).lib"     # the MSVC import library for $DllName
 $SourceDir = Join-Path $ToolsDir $Pins.LIBGIT2_DIR
 
-# The bit mask git_libgit2_features() must return: THREADS 1 | HTTPS 2 | SSH 4 | NSEC 8 = 15 -
-# what the adopted upstream 2.0.324 DLLs return (read from their machine code on 2026-10-17;
-# ..\BUILD-PROVENANCE.txt). A build that differs from upstream here fails the smoke test.
-$ExpectedFeatures = '15'
+# The bit mask git_libgit2_features() must return. The 1.8.6 DLLs (adopted from upstream
+# 2.0.324) returned THREADS 1 | HTTPS 2 | SSH 4 | NSEC 8 = 15. libgit2 1.9 widened git_feature_t
+# (include/git2/common.h), and for the SAME options a 1.9.7 Windows build must return
+#     15 | HTTP_PARSER 16 | REGEX 32 | AUTH_NTLM 128 | AUTH_NEGOTIATE 256 | COMPRESSION 512
+#        | SHA1 1024 = 1983
+# (HTTP_PARSER, REGEX, COMPRESSION and SHA1 are always set; AUTH_NTLM and AUTH_NEGOTIATE come
+# from GIT_WIN32 - SSPI; I18N 64 and SHA256 2048 stay clear: no iconv, no experimental SHA256).
+# Derived from src/libgit2/libgit2.c, NOT yet observed on a real build - if the first run
+# reports another value, find out why before changing this number.
+$ExpectedFeatures = '1983'
 
 # DLLs the shipped library may import: the operating system only. The static CRT means no
 # VCRUNTIME*/MSVCP*/ucrtbase/api-ms-win-crt-* - the gate fails on any of those.
@@ -259,10 +274,15 @@ function Invoke-Libgit2Build {
     $built = Join-Path $build "Release\$DllName"
     if (-not (Test-Path -LiteralPath $built)) { throw "the build did not produce $built" }
     Assert-Consistent-Naming $DllName $built
+    # The import library: libgit2 sets ARCHIVE_OUTPUT_DIRECTORY and OUTPUT_NAME on its shared
+    # target (src/libgit2/CMakeLists.txt), so the Visual Studio generator writes it beside the DLL.
+    $builtLib = Join-Path $build "Release\$LibName"
+    if (-not (Test-Path -LiteralPath $builtLib)) { throw "the build did not produce the import library $builtLib" }
 
     if (Test-Path -LiteralPath $out) { Remove-Item -LiteralPath $out -Recurse -Force }
     New-Item -ItemType Directory -Path $out | Out-Null
     Copy-Item -LiteralPath $built -Destination $out
+    Copy-Item -LiteralPath $builtLib -Destination $out
     $pdb = Join-Path $build "Release\$($Pins.LIBGIT2_FILENAME).pdb"
     if (Test-Path -LiteralPath $pdb) {
         New-Item -ItemType Directory -Path (Join-Path $out 'unstripped') | Out-Null
@@ -271,6 +291,7 @@ function Invoke-Libgit2Build {
     Copy-Item -LiteralPath (Join-Path $SourceDir 'COPYING') -Destination (Join-Path $out $Pins.LICENSE_FILE_NAME)
     Copy-Item -LiteralPath (Join-Path $ToolsDir 'LICENSE-Xdiff.txt') -Destination (Join-Path $out 'LICENSE-Xdiff.txt')
     $dll = Join-Path $out $DllName
+    $lib = Join-Path $out $LibName
 
     # ---- THE GATE ------------------------------------------------------------------------
     Write-Host "--- verifying ---"
@@ -286,6 +307,23 @@ function Invoke-Libgit2Build {
     if ($exports.Count -eq 0) { Add-GateFail 'no exports parsed from dumpbin /exports - check the parser against its output' }
     elseif ($missing.Count -gt 0) { Add-GateFail "missing exports: $($missing -join ' ')" }
     else { Add-GatePass "$($exports.Count) exports, all required ones present" }
+
+    # The import library must describe the same DLL: right machine, and the required exports.
+    $libHeaders = & dumpbin.exe /nologo /headers $lib
+    $libMachines = @($libHeaders | ForEach-Object {
+        if ("$_" -match '^\s*([0-9A-Fa-f]{4}) machine \(') { $Matches[1].ToUpperInvariant() }
+        elseif ("$_" -match '^\s*Machine\s*:\s*([0-9A-Fa-f]{4})\b') { $Matches[1].ToUpperInvariant() }
+    } | Sort-Object -Unique)
+    $wantMachine = '{0:X4}' -f $ExpectedMachine
+    if ($libMachines.Count -eq 0) { Add-GateFail "no machine parsed from dumpbin /headers $LibName - check the parser against its output" }
+    elseif ($libMachines.Count -ne 1 -or $libMachines[0] -ne $wantMachine) { Add-GateFail "import library machine(s) $($libMachines -join ' '), expected $wantMachine" }
+    else { Add-GatePass "import library $LibName, machine $wantMachine" }
+    $libExportsText = & dumpbin.exe /nologo /exports $lib
+    $libExports = @($libExportsText | ForEach-Object { if ("$_" -match '^\s+([A-Za-z_][A-Za-z0-9_]*)\s*$') { $Matches[1] } } | Sort-Object -Unique)
+    $libMissing = @($Pins.REQUIRED_SYMBOLS -split '\s+' | Where-Object { $_ -and ($libExports -notcontains $_) })
+    if ($libExports.Count -eq 0) { Add-GateFail "no names parsed from dumpbin /exports $LibName - check the parser against its output" }
+    elseif ($libMissing.Count -gt 0) { Add-GateFail "import library lacks: $($libMissing -join ' ')" }
+    else { Add-GatePass "import library names $(@($libExports | Where-Object { $_ -like 'git_*' }).Count) git_* functions, all required ones present" }
 
     $importsText = & dumpbin.exe /nologo /imports $dll
     $imports = @($importsText | ForEach-Object { if ("$_" -match '^\s{4}(\S+\.dll)\s*$') { $Matches[1] } } | Sort-Object -Unique)
@@ -321,6 +359,8 @@ function Invoke-Libgit2Build {
     # ---- RECORD ---------------------------------------------------------------------------
     $sha = (Get-FileHash -Algorithm SHA256 -LiteralPath $dll).Hash.ToLowerInvariant()
     $size = (Get-Item -LiteralPath $dll).Length
+    $libSha = (Get-FileHash -Algorithm SHA256 -LiteralPath $lib).Hash.ToLowerInvariant()
+    $libSize = (Get-Item -LiteralPath $lib).Length
     $cl = ((& cmd.exe /c 'cl.exe 2>&1') | Select-Object -First 1)
     $cmakeVersion = ((& $CMake --version) | Select-Object -First 1)
     $info = @"
@@ -352,6 +392,8 @@ SHA256           : $sha
 PE machine       : $('0x{0:X4}' -f $machine)
 Exports          : $($exports.Count)
 Imports          : $($imports -join ' ')
+Import library   : $LibName, $libSize bytes, sha256 $libSha
+                   (machine $wantMachine; adopted beside the DLL, never packed)
 PDB              : $(if (Test-Path -LiteralPath $pdb) { 'unstripped\' + (Split-Path -Leaf $pdb) } else { 'none (libgit2 Release links without /DEBUG, as upstream)' })
 Gate             : PASSED
 

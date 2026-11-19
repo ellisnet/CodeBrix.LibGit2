@@ -38,4 +38,6 @@ internal struct GitRemoteCallbacks
     internal IntPtr payload;
 
     internal NativeMethods.url_resolve_callback resolve_url;
+
+    private IntPtr update_refs; // left null: libgit2 then falls back to update_tips
 }

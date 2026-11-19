@@ -1,10 +1,10 @@
 ================================================================================
-Android libgit2 - libgit2-5853918.so for ARM64 and x64 (Android 13 / API 33
+Android libgit2 - libgit2-49e408b.so for ARM64 and x64 (Android 13 / API 33
 minimum), HTTPS through statically linked Mbed TLS
 ================================================================================
 
-The sources are ../libgit2 (libgit2 1.8.6, commit
-5853918c4c6a7b12f8becf4bd11ff4362ebb9020) and ../mbedtls (Mbed TLS 3.6.7, tag
+The sources are ../libgit2 (libgit2 1.9.7, commit
+49e408b3208bc3093757a1c2db938d3590f3f412) and ../mbedtls (Mbed TLS 3.6.7, tag
 v3.6.7), the same unmodified vendored snapshots every build uses - see
 ../UPSTREAM.txt. No patches. Nothing is downloaded during a build, and nothing
 in a dotnet build invokes these scripts.
@@ -16,7 +16,7 @@ in a dotnet build invokes these scripts.
                  and the git_libgit2_features() value
   build.py       builds both ABIs (or one) and runs the gates
   verify.py      the static gates, also usable on its own against any
-                 libgit2-5853918.so
+                 libgit2-49e408b.so
 
 There is no upstream for this: LibGit2Sharp.NativeBinaries ships no Android
 binaries. The recipe is CodeBrix.Sdl3's android/ recipe (NDK toolchain file,
@@ -28,17 +28,19 @@ OUTPUT
   android-arm64 -> ABI arm64-v8a, aarch64-linux-android33-clang
   android-x64   -> ABI x86_64,    x86_64-linux-android33-clang
 
-Both libraries are ELF64 libgit2-5853918.so with SONAME libgit2-5853918.so
+Both libraries are ELF64 libgit2-49e408b.so with SONAME libgit2-49e408b.so
 (CMake's Android platform does not version shared libraries, so there is no
-.so.1.8.6 + symlinks as on Linux - one plain file, the Android convention) and
+.so.1.9.7 + symlinks as on Linux - one plain file, the Android convention) and
 API 33 in their Android ELF note. They NEED only libc.so, libm.so and libdl.so.
 zlib, PCRE2, llhttp, xdiff, ntlmclient, SHA-1 collision detection AND Mbed TLS
 are all inside the one file; there is no libz.so, no libc++_shared.so and no
 second library to ship.
 
-  git_libgit2_features() = 11 = THREADS | HTTPS | NSEC. No SSH: Android has no
-  `ssh` executable for USE_SSH=exec to run, so SSH is OFF (libssh2 would be a
-  second vendored dependency and is not in the plan). ssh:// and scp-style
+  git_libgit2_features() = 1723 = THREADS | HTTPS | NSEC | HTTP_PARSER | REGEX
+  | AUTH_NTLM | COMPRESSION | SHA1 (libgit2 1.9 widened git_feature_t; the
+  same 1.8.6 build reported 11 = THREADS | HTTPS | NSEC). No SSH: Android has
+  no `ssh` executable for USE_SSH=exec to run, so SSH is OFF (libssh2 would be
+  a second vendored dependency and is not in the plan). ssh:// and scp-style
   git@host: URLs therefore cannot be used on Android; https:// can.
 
 libgit2's CMake feature summary, both ABIs:
@@ -70,8 +72,7 @@ ntlmclient's own MD4.
 -Wl,--exclude-libs,ALL keeps every Mbed TLS symbol PRIVATE to the library:
 nothing named mbedtls_* or psa_* is exported (verify.py gates it), so an app
 that loads another copy of Mbed TLS - or BoringSSL - cannot clash with this
-one. The export table is 944 names, the same set as every Linux, Windows and
-macOS build.
+one. The export table is 954 names, the same set as every Linux build.
 
 CERT_LOCATION. With the Mbed TLS backend libgit2 loads a default CA store when
 it initialises TLS, from GIT_DEFAULT_CERT_LOCATION. build.py sets
@@ -90,17 +91,22 @@ Two consequences worth knowing:
 An app can still override the store at run time with
 git_libgit2_opts(GIT_OPT_SET_SSL_CERT_LOCATIONS, file, path).
 
-THE C90 GOTCHA (first-run fix, 2026-10-17)
-------------------------------------------
-libgit2 1.8.6 compiles its own targets as strict ISO C90 (C_STANDARD 90 and
-C_EXTENSIONS OFF are hard-coded target properties), and the NDK's kernel UAPI
+THE C90 PITFALL (first-run fix, 2026-10-17; redundant since 1.9.7)
+-------------------------------------------------------------------
+libgit2 1.8.6 compiled its own targets as strict ISO C90 (C_STANDARD 90 and
+C_EXTENSIONS OFF were hard-coded target properties), and the NDK's kernel UAPI
 headers - linux/swab.h, reached from <arpa/inet.h> - use `static inline`, which
 is not a C90 keyword. The first build failed on every libgit2 file with
 "unknown type name 'inline'" (NDK r29 and r30 alike). build.py adds clang's
 -fgnu-keywords to libgit2's C flags: it makes the GNU keyword `inline`
 available without changing the language standard or touching any source.
-(libgit2's own src/libgit2/streams/mbedtls.c works round the same C90 limit
-with `#define inline __inline__`.) Mbed TLS is built without it.
+Mbed TLS is built without it.
+
+libgit2 1.9 dropped the hard-coded C90 from its object targets and defaults
+CMAKE_C_STANDARD to 99 when the target system is Android, so `inline` is a
+keyword there anyway and the flag is no longer needed. It is KEPT, unchanged,
+so the 1.9.7 build differs from the 1.8.6 one only where libgit2 itself
+changed; it affects parsing only. Removing it is a separate decision.
 
 TOOLS (install separately, before the offline build)
 ----------------------------------------------------
@@ -167,7 +173,7 @@ then:
      build + install (headers and the three .a files only).
   2. libgit2, the same toolchain / ABI / API / Release / PIC options and:
        -DBUILD_SHARED_LIBS=ON -DBUILD_TESTS=OFF -DBUILD_CLI=OFF
-       -DLIBGIT2_FILENAME=git2-5853918 -DUSE_SSH=OFF -DUSE_HTTPS=mbedTLS
+       -DLIBGIT2_FILENAME=git2-49e408b -DUSE_SSH=OFF -DUSE_HTTPS=mbedTLS
        -DUSE_BUNDLED_ZLIB=ON -DREGEX_BACKEND=builtin
        -DCERT_LOCATION=/system/etc/security/cacerts
        -DMBEDTLS_INCLUDE_DIR=... -DMBEDTLS_LIBRARY=... -DMBEDX509_LIBRARY=...
@@ -185,8 +191,11 @@ then strips with llvm-strip --strip-unneeded, cross-compiles
 ../linux/smoke-test.c for the ABI, and runs verify.py on the result. The API
 floor is 33, the CodeBrix Android floor (Sdl3, dav1d, Audio.Android).
 
-Each ../output/android-<arch>/ gets libgit2-5853918.so,
-unstripped/libgit2-5853918.so (with DWARF), LICENSE-Libgit2.txt (libgit2's
+(libgit2 1.9 writes git2_features.h to <build>/gen_headers/; 1.8.6 wrote it to
+<build>/src/util/. build.py copies it from there.)
+
+Each ../output/android-<arch>/ gets libgit2-49e408b.so,
+unstripped/libgit2-49e408b.so (with DWARF), LICENSE-Libgit2.txt (libgit2's
 COPYING), LICENSE-Xdiff.txt (../LICENSE-Xdiff.txt), LICENSE-MbedTls.txt (Mbed
 TLS's LICENSE), git2_features.h (the generated feature header), smoke-test,
 cmake-summary.txt, BUILD-INFO.json (hashes, build-id, tool versions, every
@@ -198,13 +207,13 @@ WHAT THE GATES CHECK (verify.py, on the stripped file, its twin and the header)
   * Android ELF note API == 33
   * every PT_LOAD aligned to >= 16 KB, offset/address congruent; no
     writable+executable segment
-  * SONAME exactly libgit2-5853918.so
+  * SONAME exactly libgit2-49e408b.so
   * NEEDED only libraries in pins.json "allowed_needed" (libc, libm, libdl,
     liblog) - libz.so is NOT allowed
   * no GLIBC_ version requirement; no TEXTREL, RPATH or RUNPATH
   * the required git_* exports (pins.json)
   * NO mbedtls_ / psa_ symbol in the dynamic table, exported or imported
-  * git_libgit2_features() == 11, read from the function's own machine code
+  * git_libgit2_features() == 1723, read from the function's own machine code
     (it compiles to `return <constant>;` - llvm-objdump shows the constant), so
     the HTTPS bit is proven from the shipped bytes without running them
   * the unstripped twin: same build-id, and its symbol table DEFINES the Mbed
@@ -217,34 +226,35 @@ WHAT THE GATES CHECK (verify.py, on the stripped file, its twin and the header)
     GIT_HTTPPARSER_BUILTIN, GIT_REGEX_BUILTIN and NOT GIT_SSH / GIT_OPENSSL
 
 To inspect another build:
-  python3 verify.py <libgit2-5853918.so> --arch arm64 \
+  python3 verify.py <libgit2-49e408b.so> --arch arm64 \
     --toolchain "$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
 
 RUNNING IT (emulator or device)
 -------------------------------
-build.py does not run anything Android. The shipped files WERE run once, on
-2026-10-17, on the API 35 x86_64 Google APIs emulator image
-(sdk_gphone64_x86_64, AE3A.240806.043, booted headless with -no-window
--read-only -no-snapshot): android-x64 natively, android-arm64 through the
-image's ARM translation (libndk_translation). Both passed the full smoke test,
-including GIT_OPT_SET_SSL_CERT_LOCATIONS on /system/etc/security/cacerts -
-i.e. the statically linked Mbed TLS parsed the device's CA store. To repeat:
+build.py does not run anything Android. The 1.9.7 files have NOT been run on an
+emulator or device. The 1.8.6 files WERE run once, on 2026-10-17, on the API 35
+x86_64 Google APIs emulator image (sdk_gphone64_x86_64, AE3A.240806.043, booted
+headless with -no-window -read-only -no-snapshot): android-x64 natively,
+android-arm64 through the image's ARM translation (libndk_translation). Both
+passed the full smoke test, including GIT_OPT_SET_SSL_CERT_LOCATIONS on
+/system/etc/security/cacerts - i.e. the statically linked Mbed TLS parsed the
+device's CA store. To repeat:
 
   adb -s SERIAL shell mkdir -p /data/local/tmp/lg2
-  adb -s SERIAL push output/android-x64/libgit2-5853918.so \
+  adb -s SERIAL push output/android-x64/libgit2-49e408b.so \
                      output/android-x64/smoke-test /data/local/tmp/lg2/
   adb -s SERIAL shell 'cd /data/local/tmp/lg2 && chmod 755 smoke-test && \
-      ./smoke-test ./libgit2-5853918.so 1.8.6 11 /system/etc/security/cacerts'
+      ./smoke-test ./libgit2-49e408b.so 1.9.7 1723 /system/etc/security/cacerts'
 
 No network operation was tried there (no clone or fetch over HTTPS); the real
 test of that is an app on a device.
 
 REPRODUCIBILITY
 ---------------
-Both libraries were built twice from scratch on 2026-10-17 and came out
-byte-identical, stripped and unstripped. Hashes, sizes and tool versions:
-../BUILD-PROVENANCE.txt and the .provenance.txt beside each shipped file in
-../../../native_libraries/.
+Both libraries were built twice from scratch on 2026-11-19 UTC (as for 1.8.6 on
+2026-10-17) and came out byte-identical, stripped and unstripped. Hashes, sizes
+and tool versions: ../BUILD-PROVENANCE.txt and the .provenance.txt beside each
+shipped file in ../../../native_libraries/.
 
 ADOPTION
 --------

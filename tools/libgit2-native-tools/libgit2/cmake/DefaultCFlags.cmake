@@ -59,7 +59,7 @@ if(MSVC)
 	set(CMAKE_C_FLAGS_MINSIZEREL "/DNDEBUG /O1 /Oy /GL /Gy ${CRT_FLAG_RELEASE}")
 
 	# /IGNORE:4221 - Ignore empty compilation units
-	set(CMAKE_STATIC_LINKER_FLAGS "/IGNORE:4221")
+	set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} /IGNORE:4221")
 
 	# /DYNAMICBASE - Address space load randomization (ASLR)
 	# /NXCOMPAT - Data execution prevention (DEP)
@@ -112,9 +112,11 @@ else()
 
 	if(MINGW OR MSYS) # MinGW and MSYS always do PIC and complain if we tell them to
 		string(REGEX REPLACE "-fPIC" "" CMAKE_SHARED_LIBRARY_C_FLAGS "${CMAKE_SHARED_LIBRARY_C_FLAGS}")
-	elseif(BUILD_SHARED_LIBS)
-		add_c_flag_IF_SUPPORTED(-fvisibility=hidden)
+	else()
+		add_c_flag_if_supported(-fvisibility=hidden)
+	endif()
 
+	if(BUILD_SHARED_LIBS)
 		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
 	endif()
 

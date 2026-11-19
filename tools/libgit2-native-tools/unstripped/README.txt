@@ -12,7 +12,7 @@ step.
 
 One folder per runtime identifier, mirroring ../../../native_libraries/<rid>/:
 
-  <rid>/libgit2-5853918.so   the pre-strip ELF (Linux, Android), with DWARF
+  <rid>/libgit2-49e408b.so   the pre-strip ELF (Linux, Android), with DWARF
                              debug info (every build compiles with -g; strip
                              removes it)
 
@@ -23,30 +23,33 @@ Verify any file two ways:
 
   1. sha256 - `sha256sum -c SHA256SUMS` from this folder; the same value is the
      "SHA256 unstripped" line of that RID's entry in ../BUILD-PROVENANCE.txt and
-     of ../../../native_libraries/<rid>/libgit2-5853918.so.provenance.txt.
+     of ../../../native_libraries/<rid>/libgit2-49e408b.so.provenance.txt.
   2. the GNU build-id equals the shipped binary's -
-        readelf -n <rid>/libgit2-5853918.so | grep 'Build ID'
-        readelf -n ../../../native_libraries/<rid>/libgit2-5853918.so \
+        readelf -n <rid>/libgit2-49e408b.so | grep 'Build ID'
+        readelf -n ../../../native_libraries/<rid>/libgit2-49e408b.so \
             | grep 'Build ID'
      (readelf may also print "Gap in build notes" and exit 1 - harmless, see
      ../linux/README.txt, TROUBLESHOOTING. For Android, the NDK's
      llvm-readelf -n works as well as binutils readelf -n.)
 
-STORED SO FAR (build-ids, each verified equal to its shipped twin's):
+STORED SO FAR - libgit2 1.9.7 (build-ids, each verified equal to its shipped
+twin's):
 
-  linux-x64      9c26c49eac90f1653051618e72ba2d466ebd9437   (verified 2026-10-17)
-  linux-arm64    5ba009a1b89b585462a5069d0c2bcd8573bcd4a8   (verified 2026-10-17)
-  linux-riscv64  c70d8602964379e562fe0fa61aae2b9c8016a6bc   (verified 2026-10-17)
-  android-arm64  f269df3147ab348bde8e15563c4f8d4490e5a278   (verified 2026-10-17)
-  android-x64    c0757c46cded48c7985f2b858bb06f87a3b9b0f5   (verified 2026-10-17)
+  linux-x64      aa47cc3c6f6eb0a328854a4c68aa01c7ee055c8e   (verified 2026-11-18)
+  linux-arm64    64fb5464a41577349093d7c95ea9293d2ffaea1d   (verified 2026-11-18)
+  linux-riscv64  41ab7faa013a5e14fe4925ddb68daf3946b56126   (verified 2026-11-18)
+  android-arm64  8c3b7075711abd509316e3ed8120adc095afed50   (verified 2026-11-18)
+  android-x64    6be173816ba4b17be6a88a2349f6ad56e2e723d5   (verified 2026-11-18)
 
-ADOPTED, NOT BUILT HERE - nothing to store
+The 1.8.6 twins (libgit2-5853918.so) were removed with their binaries on
+2026-11-18; they are in git history.
+
+PENDING - nothing to store yet
 --------------------------------------------------------------------------------
-The win-* and osx-* binaries are adopted from LibGit2Sharp.NativeBinaries
-2.0.324 (see ../BUILD-PROVENANCE.txt). Upstream published no .pdb or dSYM
-(the dylibs ship unstripped anyway), so there is nothing to keep here. When
-those RIDs are rebuilt with the scripts in ../windows and ../macos, any
-debug-symbol twin lands here under the same rule.
+The win-* and osx-* RIDs have no binary for libgit2 1.9.7 yet (see
+../BUILD-PROVENANCE.txt). When they are built with the scripts in ../windows
+and ../macos, any debug-symbol twin (a .pdb, should a Windows build make one;
+the dylibs ship unstripped) lands here under the same rule.
 
 THE RULE
 --------------------------------------------------------------------------------

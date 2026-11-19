@@ -1,6 +1,6 @@
 ================================================================================
 tools/libgit2-native-tools/BUILD-PROVENANCE.txt
-what was actually built (or adopted), when, by what, and with what result
+what was actually built, when, by what, and with what result
 ================================================================================
 
 WHY THIS FILE EXISTS
@@ -13,48 +13,72 @@ section here is updated from that build's output/<rid>/BUILD-INFO.txt (or
 BUILD-INFO.json) and the <file>.provenance.txt beside the binary is written from
 the same values.
 
+STATE ON 2026-11-18: libgit2 1.9.7. Five RIDs BUILT HERE and gated (linux-x64,
+linux-arm64, linux-riscv64, android-arm64, android-x64). Four RIDs PENDING - to
+be built by Jeremy on his Windows machine and his Mac (win-x64, win-arm64,
+osx-x64, osx-arm64); there is NO upstream binary to adopt for libgit2 1.9.
+
 Common to every entry below
 --------------------------------------------------------------------------------
   Source          : tools/libgit2-native-tools/libgit2/ - vendored, unmodified
-                    upstream snapshot (UPSTREAM.txt)
-  libgit2 commit  : 5853918c4c6a7b12f8becf4bd11ff4362ebb9020 = tag v1.8.6
-                    ("v1.8.6: update version numbers", 2026-07-18) - the commit
-                    LibGit2Sharp.NativeBinaries 2.0.324 pins
-  libgit2 version : 1.8.6 (git_libgit2_version), SOVERSION 1.8
+                    upstream snapshot, .github/ left out (UPSTREAM.txt)
+  libgit2 commit  : 49e408b3208bc3093757a1c2db938d3590f3f412 = tag v1.9.7
+                    (released 2026-08-13)
+  libgit2 version : 1.9.7 (git_libgit2_version), SOVERSION 1.9
   Licence         : GPLv2 WITH the libgit2 linking exception - libgit2/COPYING,
                     shipped beside every binary as LICENSE-Libgit2.txt, with
                     LICENSE-Xdiff.txt (the bundled xdiff's own notices) beside
                     it too; see ../../THIRD-PARTY-NOTICES.txt
   Patches applied : NONE. There is no patch step.
-  Shipped names   : libgit2-5853918.so / git2-5853918.dll /
-                    libgit2-5853918.dylib - upstream's names, commit suffix kept
-                    (-DLIBGIT2_FILENAME=git2-5853918), so they never collide
-                    with upstream LibGit2Sharp or a system libgit2 in the same
-                    process
-  Exports         : 944 names on EVERY RID, built or adopted - one identical
-                    set (940 git_* plus giterr_last, giterr_clear,
-                    giterr_set_str, giterr_set_oom)
+  Shipped names   : libgit2-49e408b.so / git2-49e408b.dll /
+                    libgit2-49e408b.dylib - upstream LibGit2Sharp's naming
+                    scheme, commit suffix kept (-DLIBGIT2_FILENAME=git2-49e408b),
+                    so they never collide with upstream LibGit2Sharp or a system
+                    libgit2 in the same process
+  Exports         : 954 names on EVERY RID built so far - one identical set
+                    (950 git_* plus giterr_last, giterr_clear, giterr_set_str,
+                    giterr_set_oom). Against 1.8.6's 944: added
+                    git_blame_hunk_byindex, git_blame_hunk_byline,
+                    git_blame_hunkcount, git_blame_line_byindex,
+                    git_blame_linecount, git_libgit2_feature_backend,
+                    git_mempack_object_count, git_mempack_write_thin_pack,
+                    git_refspec_src_matches_negative, git_remote_oid_type,
+                    git_signature_default_from_env; removed
+                    git_reflog_entry__free (include/git2/sys/reflog.h is gone)
+  Feature mask    : libgit2 1.9 widened git_feature_t (include/git2/common.h)
+                    from four bits to twelve - THREADS 1, HTTPS 2, SSH 4,
+                    NSEC 8, HTTP_PARSER 16, REGEX 32, I18N 64, AUTH_NTLM 128,
+                    AUTH_NEGOTIATE 256, COMPRESSION 512, SHA1 1024, SHA256
+                    2048 - and sets HTTP_PARSER, REGEX, COMPRESSION and SHA1
+                    unconditionally. So the SAME configuration returns a larger
+                    git_libgit2_features() than 1.8.6 did: Linux 1727 (was 15),
+                    Android 1723 (was 11), Windows 1983 expected (was 15), macOS
+                    1791 expected (was 15). The low four bits are unchanged
+                    everywhere.
 
 Linux (the three linux-* entries)
 --------------------------------------------------------------------------------
   Route           : linux/build.sh <arch> -> container-build.sh, inside
                     codebrix-libgit2-build-<arch> (Containerfile.<arch>: the
                     digest-pinned manylinux base + cmake 4.4.3 + ninja 1.13.2 +
-                    `file`; NO -devel packages), run with --network none
+                    `file`; NO -devel packages), run with --network none. The
+                    derived images built for 1.8.6 on 2026-10-17 were reused
+                    unchanged (no image rebuild, so no network use at all)
   cmake options   : -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF
-                    -DUSE_SSH=exec -DLIBGIT2_FILENAME=git2-5853918
+                    -DUSE_SSH=exec -DLIBGIT2_FILENAME=git2-49e408b
                     -DUSE_HTTPS=OpenSSL-Dynamic -DUSE_BUNDLED_ZLIB=ON
-                    (= upstream build.libgit2.sh's Linux flags, verbatim)
-                    -DREGEX_BACKEND=builtin (the one addition the image
-                    requires: the manylinux images carry pcre-devel, which
-                    libgit2 would otherwise pick, linking libpcre.so.1)
+                    (= upstream build.libgit2.sh's 1.8.6-era Linux flags,
+                    verbatim; every one still exists in 1.9.7 with the same
+                    meaning) -DREGEX_BACKEND=builtin (the one addition the
+                    image requires: the manylinux images carry pcre-devel,
+                    which libgit2 would otherwise pick, linking libpcre.so.1)
                     CMAKE_C_FLAGS="-g -ffile-prefix-map=<src>=libgit2
                     -ffile-prefix-map=<build>=build -ffile-prefix-map=/work=
                     libgit2-native-tools"; linker -Wl,--build-id=sha1;
                     CMake's Release -O3 -DNDEBUG unchanged; then
-                    strip --strip-unneeded
-  Feature summary : identical on all three RIDs (libgit2's own CMake summary,
-                    gate item 8):
+                    strip --strip-unneeded. NO option changed from 1.8.6.
+  Feature summary : identical on all three RIDs, and identical to 1.8.6
+                    (libgit2's own CMake summary, gate item 8):
                       threadsafe; nanoseconds; futimens;
                       HTTPS using OpenSSL-Dynamic;
                       SHA1 using CollisionDetection;
@@ -67,24 +91,30 @@ Linux (the three linux-* entries)
                       ntlmclient (NTLM authentication support for Unix)
                     disabled: experimental SHA256 API, GSSAPI, iconv, debug
                     pool / strict alloc / strict open
+  git_libgit2_features(): 1727 = THREADS | HTTPS | SSH | NSEC | HTTP_PARSER |
+                    REGEX | AUTH_NTLM | COMPRESSION | SHA1 (smoke test)
   OpenSSL         : dlopen()ed at run time, never linked. libgit2 probes, in
                     order, libssl.so.1.1, libssl.1.1.dylib, libssl.so.1.0.0,
                     libssl.1.0.0.dylib, libssl.so.10, libssl.so.3
-                    (src/libgit2/streams/openssl_dynamic.c); the smoke test
-                    proved the load with OpenSSL 1.1.1k (x64, arm64 images)
-                    and OpenSSL 3.5.5 (riscv64 image)
-  Reproducibility : each Linux RID was built TWICE from scratch on 2026-10-17
-                    (run A 15:01-15:12 UTC, run B 15:12-15:18 UTC, B with the
-                    final scripts): stripped AND unstripped byte-identical for
-                    all three. The entries below are run B.
+                    (src/libgit2/streams/openssl_dynamic.c - unchanged from
+                    1.8.6); the smoke test proved the load with OpenSSL 1.1.1k
+                    (x64, arm64 images) and OpenSSL 3.5.5 (riscv64 image)
+  C standard      : libgit2 1.9 sets CMAKE_C_STANDARD 90 (C_EXTENSIONS OFF) as a
+                    cache default for every target, bundled dependencies
+                    included (1.8.6 set C90 on libgit2's own targets only).
+                    Upstream's choice; 0 compiler warnings on all three RIDs
+  Reproducibility : linux-x64 was built TWICE from scratch on 2026-11-19 UTC
+                    (03:34 and 03:40): stripped AND unstripped byte-identical.
+                    linux-arm64 and linux-riscv64 were built once each.
   Gate            : linux/README.txt, THE VERIFICATION GATE (10 checks: ELF,
                     SONAME, RPATH/TEXTREL, exports, NEEDED + forbidden list +
                     ldd -r, glibc floor, build-id, feature summary,
                     OpenSSL-Dynamic probe names, smoke test incl. TLS init)
-  First-run fixes : NONE. All three RIDs passed every gate check on their first
-                    run. (-DREGEX_BACKEND=builtin was decided BEFORE the first
-                    run, from reading cmake/SelectRegex.cmake against the base
-                    image's package list - not found by a failure.)
+  Changes for 1.9.7: pins only (version, commit, file name, SONAME, expected
+                    feature mask 15 -> 1727) and smoke-test.c (default
+                    version, default mask, names of the new feature bits in
+                    its output). All three RIDs passed every gate check on
+                    their first 1.9.7 run.
 
 Android (the two android-* entries)
 --------------------------------------------------------------------------------
@@ -92,16 +122,17 @@ Android (the two android-* entries)
                     tool image with --network none and the NDK mounted
                     read-only (the host has no ninja)
   Mbed TLS        : 3.6.7 (tag v3.6.7, commit 068ff080b369), from
-                    tools/libgit2-native-tools/mbedtls/, built FIRST per ABI as
-                    static libraries with -DENABLE_TESTING=OFF
+                    tools/libgit2-native-tools/mbedtls/ - NOT upgraded - built
+                    FIRST per ABI as static libraries with -DENABLE_TESTING=OFF
                     -DENABLE_PROGRAMS=OFF -DUSE_STATIC_MBEDTLS_LIBRARY=ON
                     -DUSE_SHARED_MBEDTLS_LIBRARY=OFF -DGEN_FILES=OFF, default
-                    configuration (mbedtls_config.h unmodified)
+                    configuration (mbedtls_config.h unmodified). The three
+                    archives have exactly the sizes the 1.8.6 builds recorded
   libgit2 options : -G Ninja -DCMAKE_TOOLCHAIN_FILE=<NDK>/build/cmake/android.
                     toolchain.cmake -DANDROID_ABI=<abi> -DANDROID_PLATFORM=33
                     -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON
                     -DBUILD_SHARED_LIBS=ON -DBUILD_TESTS=OFF -DBUILD_CLI=OFF
-                    -DLIBGIT2_FILENAME=git2-5853918 -DUSE_SSH=OFF
+                    -DLIBGIT2_FILENAME=git2-49e408b -DUSE_SSH=OFF
                     -DUSE_HTTPS=mbedTLS -DUSE_BUNDLED_ZLIB=ON
                     -DREGEX_BACKEND=builtin
                     -DCERT_LOCATION=/system/etc/security/cacerts
@@ -114,121 +145,102 @@ Android (the two android-* entries)
                     -fdebug-compilation-dir=build, and for libgit2 only
                     -fgnu-keywords; link flags -Wl,-z,max-page-size=16384
                     -Wl,-z,common-page-size=16384 -Wl,--build-id=sha1
-                    -Wl,--exclude-libs,ALL; then llvm-strip --strip-unneeded
-  Feature summary : both ABIs: nanoseconds; CERT_LOCATION using certificates
-                    from /system/etc/security/cacerts; HTTPS using mbedTLS;
-                    SHA1 using CollisionDetection; SHA256 using mbedTLS;
-                    http-parser bundled; regex bundled PCRE; xdiff bundled;
-                    zlib bundled; futimens; threadsafe; ntlmclient
+                    -Wl,--exclude-libs,ALL; then llvm-strip --strip-unneeded.
+                    NO option changed from 1.8.6.
+  -fgnu-keywords  : KEPT, but REDUNDANT from 1.9.7 on. It was 1.8.6's first-run
+                    fix for libgit2's hard-coded C90 against the NDK headers'
+                    `static inline`; 1.9 defaults CMAKE_C_STANDARD to 99 when
+                    the system is Android, so `inline` is a keyword anyway. It
+                    affects parsing only. Dropping it is a separate decision
+                    (android/build.py says so where it is set).
+  Feature summary : both ABIs, identical to 1.8.6: nanoseconds; CERT_LOCATION
+                    using certificates from /system/etc/security/cacerts; HTTPS
+                    using mbedTLS; SHA1 using CollisionDetection; SHA256 using
+                    mbedTLS; http-parser bundled; regex bundled PCRE; xdiff
+                    bundled; zlib bundled; futimens; threadsafe; ntlmclient
                     disabled: SSH (no `ssh` on Android), GSSAPI, iconv,
                     experimental SHA256 API, debug allocators
   git2_features.h : GIT_THREADS GIT_HTTPS GIT_MBEDTLS GIT_SHA1_COLLISIONDETECT
                     GIT_SHA256_MBEDTLS GIT_USE_NSEC GIT_NTLM
-                    GIT_HTTPPARSER_BUILTIN GIT_REGEX_BUILTIN; no GIT_SSH, no
-                    GIT_OPENSSL (gated)
+                    GIT_HTTPPARSER_BUILTIN GIT_REGEX_BUILTIN (+ the new
+                    GIT_COMPRESSION_BUILTIN); no GIT_SSH, no GIT_OPENSSL (gated).
+                    1.9 writes it to <build>/gen_headers/ (was src/util/)
+  git_libgit2_features(): 1723 = THREADS | HTTPS | NSEC | HTTP_PARSER | REGEX |
+                    AUTH_NTLM | COMPRESSION | SHA1 (from the machine code)
   API floor       : 33 (CodeBrix's Android floor, as CodeBrix.Sdl3)
   Warnings        : android-x64 only, deps/llhttp/llhttp.c:2635 and :2865
-                    "unused variable 'avail'" - upstream code, harmless
-  Reproducibility : both ABIs built THREE times from scratch on 2026-10-17
-                    (15:07, 15:08, 15:18 UTC; the first successful one after the
-                    two first-run fixes below): identical stripped and
-                    unstripped sha256 every time. The entries below are the
-                    third run.
-  First-run fixes : two, both in build.py, neither in any source:
-                    (1) every libgit2 file failed with "unknown type name
-                    'inline'": libgit2 1.8.6 hard-codes C_STANDARD 90 +
-                    C_EXTENSIONS OFF, and the NDK's linux/swab.h (via
-                    <arpa/inet.h>) uses `static inline` - NDK r29 and r30
-                    alike. Fixed with clang's -fgnu-keywords for libgit2 only
-                    (makes the GNU keyword `inline` available without changing
-                    the standard; libgit2's own streams/mbedtls.c works round
-                    the same limit with `#define inline __inline__`).
-                    (2) -DSONAME=OFF (tried, to get an unversioned soname) makes
-                    libgit2 ignore LIBGIT2_FILENAME (the file came out as
-                    liblibgit2package.so). Removed: on Android CMake does not
-                    version shared libraries anyway, so the default already
-                    gives one plain libgit2-5853918.so with SONAME
-                    libgit2-5853918.so.
-  Run             : 2026-10-17, on the API 35 x86_64 Google APIs emulator
-                    (sdk_gphone64_x86_64, AE3A.240806.043, headless,
-                    -read-only -no-snapshot): android-x64 natively,
-                    android-arm64 through libndk_translation - linux/smoke-
-                    test.c PASSED on both (version 1.8.6, features 11, init,
-                    blob hash, repository init/write/open in /data/local/tmp,
-                    GIT_OPT_SET_SSL_CERT_LOCATIONS on
-                    /system/etc/security/cacerts = Mbed TLS parsed the device's
-                    145 CA certificates without error, shutdown). No network
-                    operation (clone / fetch over HTTPS) was attempted.
+                    "unused variable 'avail'" - upstream code, harmless, as 1.8.6
+  Reproducibility : both ABIs built TWICE from scratch on 2026-11-19 UTC (03:35
+                    and 03:37): identical stripped and unstripped sha256. The
+                    entries below are the second run.
+  Changes for 1.9.7: pins.json (commit, version, file name, SONAME, expected
+                    features 11 -> 1723); build.py (version check made
+                    whitespace-tolerant - 1.9 re-aligned version.h; feature
+                    header path gen_headers/); verify.py (names of the new
+                    feature bits). Both ABIs passed every static gate on their
+                    first 1.9.7 run.
+  Run             : NOT RUN on an emulator or device for 1.9.7 (the 1.8.6
+                    binaries were, on 2026-10-17 - android/README.txt, RUNNING
+                    IT). The static gates read the feature mask from the shipped
+                    machine code; the smoke test is cross-compiled into
+                    output/android-<arch>/ and can be pushed and run as
+                    android/README.txt describes.
 
-Windows (the two win-* entries)
+Windows (the two win-* entries)                                        PENDING
 --------------------------------------------------------------------------------
-  Route           : ADOPTED, not built here: runtimes/win-*/native/
-                    git2-5853918.dll of LibGit2Sharp.NativeBinaries 2.0.324,
-                    downloaded once from nuget.org on 2026-10-17
-  Package         : https://api.nuget.org/v3-flatcontainer/libgit2sharp.
-                    nativebinaries/2.0.324/libgit2sharp.nativebinaries.2.0.324.nupkg
-                    sha256 c7bb0ed883dc0ed630da41a05f8d97cc5f6d73a6e7d50db3a27d5443bca6bf7e
-                    sha512 EtQYAupc1Qa696Dx5ENlvf+rPmZOPWhmxmwFeKWv4zUHtYG4meL/
-                           zJTGkoQ538QriNZv2hYpmBNNRw/o4s2gHg==
-                    10,352,503 bytes; `dotnet nuget verify --all` exit 0
-                    (nuget.org repository signature); nuspec repository commit
-                    2b95030f15e55dfe70e9fdbb2b3d304a5c95ad23 = the
-                    reference-upstream/ copy
-  Identity check  : the file in native_libraries, the extracted file and the
-                    ZIP entry read straight out of the .nupkg: same sha256
-  Upstream recipe : build.libgit2.ps1 -x64 | -arm64 on windows-2022:
-                    cmake -A x64|ARM64 -D USE_SSH=exec -D USE_HTTPS=Schannel
+  State           : NO BINARY. The adopted 1.8.6 DLLs (LibGit2Sharp.
+                    NativeBinaries 2.0.324) were REMOVED on 2026-11-18: they
+                    are the wrong ABI under an old name. Upstream has
+                    published no libgit2 1.9 binaries, so these RIDs must be
+                    BUILT, by Jeremy, on a Windows machine
+  Route           : windows/build.libgit2.ps1 -x64 / -arm64 - written
+                    2026-10-17, re-pointed at 1.9.7 on 2026-11-18, NEVER RUN
+  cmake options   : -A x64|ARM64 -D USE_SSH=exec -D USE_HTTPS=Schannel
                     -D BUILD_TESTS=OFF -D BUILD_CLI=OFF
-                    -D LIBGIT2_FILENAME=git2-5853918; Release; MSVC 14.44
-                    NOTE: Schannel, not the WinHTTP backend - the DLLs import
-                    no winhttp.dll
-  Rebuild         : windows/build.libgit2.ps1 -x64 / -arm64 - written
-                    2026-10-17, UNRUN; same cmake arguments, source from
-                    ../libgit2, gate (machine, exports, OS-only imports / no
-                    CRT DLL, feature summary, smoke test)
-  Verified        : on Linux only (no Windows machine involved), with the NDK's
-                    llvm-readobj / llvm-objdump: PE headers, imports, exports,
-                    debug directory, version resource strings, and the machine
-                    code of git_libgit2_features (returns 15). NOT executed.
-  Licences        : binary GPLv2 + linking exception (libgit2) with its bundled
-                    deps; upstream's packaging MIT (LibGit2Sharp contributors) -
-                    no LibGit2Sharp code is in the DLLs
+                    -D LIBGIT2_FILENAME=git2-49e408b; Release; MSVC (upstream's
+                    1.8.6-era recipe, unchanged; every option exists in 1.9.7)
+  Expected        : git2-49e408b.dll + its import library git2-49e408b.lib
+                    (kept for native tools that link against the DLL; adopted
+                    into native_libraries/win-<arch>/, NOT packed); features
+                    1983 = THREADS | HTTPS | SSH | NSEC | HTTP_PARSER | REGEX |
+                    AUTH_NTLM | AUTH_NEGOTIATE | COMPRESSION | SHA1 (derived from
+                    src/libgit2/libgit2.c, not yet observed); imports OS-only,
+                    static CRT; Schannel, not WinHTTP
+  Gate            : windows/README.txt, THE GATE
 
-macOS (the two osx-* entries)
+macOS (the two osx-* entries)                                          PENDING
 --------------------------------------------------------------------------------
-  Route           : ADOPTED, not built here: runtimes/osx-*/native/
-                    libgit2-5853918.dylib of the same 2.0.324 package (package
-                    hashes, signature and identity check as for Windows)
-  Upstream recipe : build.libgit2.sh with RID=osx-x64 | osx-arm64 on
-                    macos-14 (Apple Silicon; x86_64 cross-built):
-                    -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF -DUSE_SSH=exec
-                    -DLIBGIT2_FILENAME=git2-5853918
-                    -DCMAKE_OSX_ARCHITECTURES=x86_64|arm64 -DUSE_HTTPS=ON
-                    (-> SecureTransport) -DUSE_BUNDLED_ZLIB=ON; no deployment
-                    target
-  MINIMUM macOS   : 14.0 on BOTH slices (LC_BUILD_VERSION minos 14.0, SDK
-                    14.5) - the runner's macOS, because upstream sets no
-                    deployment target. The shipped osx-* libraries do NOT load
-                    on macOS 13 or older. Recorded, not changed (ruling: adopt
-                    as-is); macos/build.sh can choose a lower floor with
-                    DEPLOYMENT_TARGET.
-  Rebuild         : macos/build.sh arm64 / x64 - written 2026-10-17, UNRUN
-  Verified        : on Linux only (no Mac involved), with the NDK's
-                    llvm-objdump / llvm-nm: load commands, symbol tables,
-                    imports (SSLCreateContext, CC_SHA256_*, regcomp_l, iconv),
-                    and the machine code of git_libgit2_features (returns 15).
-                    NOT executed; codesign / otool not available.
-  Licences        : as for Windows
+  State           : NO BINARY. The adopted 1.8.6 dylibs (2.0.324) were REMOVED
+                    on 2026-11-18, for the same reason. These RIDs must be
+                    BUILT, by Jeremy, on a Mac
+  Route           : macos/build.sh arm64 / x64 - written 2026-10-17, re-pointed
+                    at 1.9.7 on 2026-11-18, NEVER RUN
+  cmake options   : -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF -DUSE_SSH=exec
+                    -DLIBGIT2_FILENAME=git2-49e408b
+                    -DCMAKE_OSX_ARCHITECTURES=arm64|x86_64 -DUSE_HTTPS=ON
+                    (-> SecureTransport) -DUSE_BUNDLED_ZLIB=ON
+                    -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 (upstream's 1.8.6-era
+                    recipe plus the deployment target, which upstream does not
+                    pass; DEPLOYMENT_TARGET overrides the 14.0)
+  Expected        : libgit2-49e408b.dylib (built as libgit2-49e408b.1.9.7.dylib,
+                    install name @rpath/libgit2-49e408b.1.9.dylib); features
+                    1791 = THREADS | HTTPS | SSH | NSEC | HTTP_PARSER | REGEX |
+                    I18N | AUTH_NTLM | COMPRESSION | SHA1 (derived, not yet
+                    observed); links CoreFoundation, Security, libiconv,
+                    libSystem only. MINIMUM macOS = 14.0, the same as the
+                    1.8.6 dylibs they replace (the owner's rule: no newer
+                    macOS than before); the gate fails any other value
+  Gate            : macos/README.txt, THE GATE
 
 ================================================================================
 linux-x64                                                         BUILT + PASSED
 ================================================================================
-Built            : 2026-10-17 15:12:58 UTC (run B; run A 15:01 UTC, identical)
+Built            : 2026-11-19 03:40:21 UTC (run B; run A 03:34:12 UTC,
+                   identical bytes)
 Built by         : linux/build.sh x64 -> container-build.sh
-Build host       : Dell Precision 7770, LMDE 7, x86_64, podman 5.4.2 -
-                   the x86_64 laptop itself (native)
-Duration         : 9s (wall clock inside the container; run A 8s, plus 39s
-                   for the first derived-image build)
+Build host       : Dell Precision 7770, LMDE 7, x86_64, podman - the x86_64
+                   laptop itself (native)
+Duration         : 8s (wall clock inside the container; both runs)
 Network          : DISABLED during this build (interfaces: lo)
 Derived image    : codebrix-libgit2-build-x86_64
 Base image       : quay.io/pypa/manylinux_2_28_x86_64@sha256:a61875a2f84cab7df8de222ff12cabc08ff86eb4ad402ac90ba7bdaed9600cca
@@ -240,40 +252,38 @@ Warnings         : 0 compiler warnings; one CMake deprecation warning
                    (libgit2's cmake_minimum_required(VERSION 3.5.1) under
                    CMake 4)
 
-File             : libgit2-5853918.so       built as libgit2-5853918.so.1.8.6
-SONAME           : libgit2-5853918.so.1.8
-Size (stripped)  : 1,923,136 bytes
-Size (unstripped): 10,884,584 bytes
-SHA256           : 581b89b129aeea1b5a54d9df09c34fc1263a700d3bf8d1ddf12de2ce564935d1
-SHA256 unstripped: 01007ee7bda19983c1d668519036686f0685f563f5d6d0416c1fd1028256bb33
-Build-id (sha1)  : 9c26c49eac90f1653051618e72ba2d466ebd9437
+File             : libgit2-49e408b.so       built as libgit2-49e408b.so.1.9.7
+SONAME           : libgit2-49e408b.so.1.9
+Size (stripped)  : 2,013,344 bytes
+Size (unstripped): 11,571,824 bytes
+SHA256           : ee82496311ae9d06534fb400654baeeacaee735911beaabcf14bace1b577840e
+SHA256 unstripped: 5cb7bfcf41598e9d7147b7d3378dca36aa8c4c5099f9fae806be56a810fb56b4
+Build-id (sha1)  : aa47cc3c6f6eb0a328854a4c68aa01c7ee055c8e
 ELF              : ELF64, Advanced Micro Devices X86-64
 glibc floor      : 2.25 (allowed <= 2.28)
 Dynamic deps     : libc.so.6 libdl.so.2 libpthread.so.0 librt.so.1
-Exports          : 944 (940 git_*)
+Exports          : 954 (950 git_*)
 Gate             : ELF class/machine ok, SONAME ok, no RPATH/RUNPATH/TEXTREL,
                    20/20 required exports, NEEDED glibc-only, ldd -r clean,
                    glibc floor ok, build-ids match, 11/11 feature lines,
                    OpenSSL-Dynamic probe names present, smoke test PASSED
-                   (1.8.6, features 15, init, blob
+                   (1.9.7, features 1727, init, blob
                    ce013625030ba8dba906f756967f9e9ca394464a, repository
                    init/write/open, SET_SSL_CERT_LOCATIONS via the image's
                    libssl.so.1.1 / OpenSSL 1.1.1k, shutdown)
-vs upstream      : see COMPARISON WITH UPSTREAM 2.0.324 below
-Adopted into native_libraries/linux-x64/ : YES, 2026-10-17, with
+Adopted into native_libraries/linux-x64/ : YES, 2026-11-18, with
                    LICENSE-Libgit2.txt, LICENSE-Xdiff.txt and
-                   libgit2-5853918.so.provenance.txt; unstripped twin in
+                   libgit2-49e408b.so.provenance.txt; unstripped twin in
                    unstripped/linux-x64/
 
 ================================================================================
 linux-arm64                                                       BUILT + PASSED
 ================================================================================
-Built            : 2026-10-17 15:13:07 UTC (run B; run A 15:05 UTC, identical)
+Built            : 2026-11-19 03:34:56 UTC
 Built by         : linux/build.sh arm64 -> container-build.sh
-Build host       : Dell Precision 7770, LMDE 7, x86_64, podman 5.4.2 -
-                   the same x86_64 laptop, under qemu-user emulation
-Duration         : 143s (wall clock inside the container; run A including the
-                   first derived-image build: 339s end to end)
+Build host       : Dell Precision 7770, LMDE 7, x86_64, podman - the same
+                   x86_64 laptop, under qemu-user emulation
+Duration         : 162s (wall clock inside the container)
 Network          : DISABLED during this build (interfaces: lo)
 Derived image    : codebrix-libgit2-build-aarch64
 Base image       : quay.io/pypa/manylinux_2_28_aarch64@sha256:162c81dfd3efc710732a571717d3c916a6945ebf279e879ddee3243af96fe46f
@@ -281,41 +291,39 @@ Container OS     : AlmaLinux 8.10 (Cerulean Leopard), ldd (GNU libc) 2.28
 Compiler         : cc (GCC) 14.2.1 20250110 (Red Hat 14.2.1-11)
 Linker           : GNU ld version 2.41-4.el8_10.1
 cmake / ninja    : cmake version 4.4.3 (pinned 4.4.3) / 1.13.2.git.kitware.jobserver-pipe-1 (pinned 1.13.2)
-Warnings         : 2 compiler warnings, both gcc -Wmaybe-uninitialized in
-                   upstream src/util/net.c (userpass_end at :310, authority at
-                   :554) - flow-analysis false alarms, aarch64 only; plus the
-                   CMake deprecation warning
+Warnings         : 0 compiler warnings (1.8.6 had two -Wmaybe-uninitialized in
+                   src/util/net.c on aarch64; gone); the CMake deprecation
+                   warning
 
-File             : libgit2-5853918.so       built as libgit2-5853918.so.1.8.6
-SONAME           : libgit2-5853918.so.1.8
-Size (stripped)  : 1,988,360 bytes
-Size (unstripped): 11,285,784 bytes
-SHA256           : 7d8ace14d57ad94c2cb1bea42f3423cc29aca5a0f81f2b2ea239672191806a1f
-SHA256 unstripped: b47c06485751f1d8e27c54cd5491d6ed4f383e364ce14c899d90e190d51ca7c6
-Build-id (sha1)  : 5ba009a1b89b585462a5069d0c2bcd8573bcd4a8
+File             : libgit2-49e408b.so       built as libgit2-49e408b.so.1.9.7
+SONAME           : libgit2-49e408b.so.1.9
+Size (stripped)  : 2,053,992 bytes
+Size (unstripped): 11,962,832 bytes
+SHA256           : 8dd298a70646e3a427c13c84933e0e976dfcd8bf76315f4163a81d85431e3b5b
+SHA256 unstripped: 66bd14735cdee07a833a09f877415b2a5c2ee849442e95b1bbebd8428e408bd4
+Build-id (sha1)  : 64fb5464a41577349093d7c95ea9293d2ffaea1d
 ELF              : ELF64, AArch64
 glibc floor      : 2.25 (allowed <= 2.28)
 Dynamic deps     : libc.so.6 libdl.so.2 libpthread.so.0 librt.so.1
-Exports          : 944 (940 git_*)
-Gate             : all ten checks passed, as linux-x64; smoke test TLS init via
-                   the image's libssl.so.1.1 / OpenSSL 1.1.1k
+Exports          : 954 (950 git_*)
+Gate             : all ten checks passed, as linux-x64; smoke test (features
+                   1727) TLS init via the image's libssl.so.1.1 / OpenSSL 1.1.1k
 Note             : the smoke test EXECUTED the library under qemu. qemu is not
                    silicon; running the managed test suite on real arm64
                    hardware remains worth doing before a release.
-Adopted into native_libraries/linux-arm64/ : YES, 2026-10-17, with
+Adopted into native_libraries/linux-arm64/ : YES, 2026-11-18, with
                    LICENSE-Libgit2.txt, LICENSE-Xdiff.txt and
-                   libgit2-5853918.so.provenance.txt; unstripped twin in
+                   libgit2-49e408b.so.provenance.txt; unstripped twin in
                    unstripped/linux-arm64/
 
 ================================================================================
 linux-riscv64                                                     BUILT + PASSED
 ================================================================================
-Built            : 2026-10-17 15:15:31 UTC (run B; run A 15:10 UTC, identical)
+Built            : 2026-11-19 03:37:39 UTC
 Built by         : linux/build.sh riscv64 -> container-build.sh
-Build host       : Dell Precision 7770, LMDE 7, x86_64, podman 5.4.2 -
-                   the same x86_64 laptop, under qemu-user emulation
-Duration         : 138s (wall clock inside the container; run A including the
-                   first derived-image build: 269s end to end)
+Build host       : Dell Precision 7770, LMDE 7, x86_64, podman - the same
+                   x86_64 laptop, under qemu-user emulation
+Duration         : 143s (wall clock inside the container)
 Network          : DISABLED during this build (interfaces: lo)
 Derived image    : codebrix-libgit2-build-riscv64
 Base image       : quay.io/pypa/manylinux_2_39_riscv64@sha256:04b3acc69a6cebb10ac1252587d202acce6445d91c783d3f92229bb2b2483069
@@ -325,35 +333,36 @@ Linker           : GNU ld version 2.41-63.el10
 cmake / ninja    : cmake version 4.4.3 (pinned 4.4.3) / 1.13.2.git.kitware.jobserver-pipe-1 (pinned 1.13.2)
 Warnings         : 0 compiler warnings; the CMake deprecation warning
 
-File             : libgit2-5853918.so       built as libgit2-5853918.so.1.8.6
-SONAME           : libgit2-5853918.so.1.8
-Size (stripped)  : 1,629,360 bytes
-Size (unstripped): 8,642,232 bytes
-SHA256           : 8f9319bfc01b6fcaa7a9853ef806c67ce50459e9618c7041c7c3be9c2c724fd8
-SHA256 unstripped: 87e1b1ae6e87c549dbeff5ea4eceb1fd3c836133fc3a0d5b63c3d072c432671c
-Build-id (sha1)  : c70d8602964379e562fe0fa61aae2b9c8016a6bc
+File             : libgit2-49e408b.so       built as libgit2-49e408b.so.1.9.7
+SONAME           : libgit2-49e408b.so.1.9
+Size (stripped)  : 1,707,288 bytes
+Size (unstripped): 9,140,032 bytes
+SHA256           : 378694e743afc7b4a2c4fc1c6253248c208b622d02b3c6a8ffed6fd3491698e4
+SHA256 unstripped: 37143b08481f86d0e2a33ae6ab8a05a87a867ac5f8d069e3b27cec44ef7ea2a2
+Build-id (sha1)  : 41ab7faa013a5e14fe4925ddb68daf3946b56126
 ELF              : ELF64, RISC-V (RVC, double-float ABI)
 glibc floor      : 2.38 (allowed <= 2.39)
 Dynamic deps     : libc.so.6 (glibc 2.34+ folded libdl / libpthread / librt in)
-Exports          : 944 (940 git_*)
-Gate             : all ten checks passed; smoke test TLS init via the image's
-                   libssl.so.3 / OpenSSL 3.5.5 - the libssl.so.3 probe path,
-                   proven
+Exports          : 954 (950 git_*)
+Gate             : all ten checks passed; smoke test (features 1727) TLS init
+                   via the image's libssl.so.3 / OpenSSL 3.5.5 - the
+                   libssl.so.3 probe path, proven
 Note             : the smoke test EXECUTED the library under qemu. Real RISC-V
-                   hardware is still the last word. Upstream ships no
-                   linux-riscv64 binary, so there is nothing to compare with.
-Adopted into native_libraries/linux-riscv64/ : YES, 2026-10-17, with
+                   hardware is still the last word.
+Adopted into native_libraries/linux-riscv64/ : YES, 2026-11-18, with
                    LICENSE-Libgit2.txt, LICENSE-Xdiff.txt and
-                   libgit2-5853918.so.provenance.txt; unstripped twin in
+                   libgit2-49e408b.so.provenance.txt; unstripped twin in
                    unstripped/linux-riscv64/
 
 ================================================================================
 android-arm64                                                     BUILT + PASSED
 ================================================================================
-Built            : 2026-10-17 15:18:18 UTC (third of three identical runs)
+Built            : 2026-11-19 03:37:14 UTC (second of two identical runs; the
+                   first 03:35:41 UTC)
 Built by         : android/build.py --arch all (both ABIs in one run)
-Build host       : Dell Precision 7770, LMDE 7, x86_64, podman 5.4.2
-Duration         : about 9s for this ABI (Mbed TLS + libgit2 + strip + gates)
+Build host       : Dell Precision 7770, LMDE 7, x86_64, podman
+Duration         : 15s for this ABI in the second run, 8s in the first (Mbed TLS
+                   + libgit2 + strip + gates)
 Network          : DISABLED during this build (interfaces: lo)
 Tool image       : codebrix-libgit2-build-x86_64 (cmake, ninja, Python only)
 NDK              : 30.0.16248370 (r30), mounted read-only
@@ -361,47 +370,48 @@ Compiler         : Android (16134705, +pgo, +bolt, +lto, +mlgo, based on r574158
                    aarch64-linux-android33 (ABI arm64-v8a)
 cmake / ninja    : cmake version 4.4.3 / 1.13.2.git.kitware.jobserver-pipe-1
 Mbed TLS archives: libmbedtls.a 2,374,176 B, libmbedx509.a 562,772 B,
-                   libmbedcrypto.a 5,114,918 B (sha256 in BUILD-INFO.json)
+                   libmbedcrypto.a 5,114,918 B (sha256 in BUILD-INFO.json;
+                   the same sizes as the 1.8.6 builds')
 
-File             : libgit2-5853918.so       SONAME libgit2-5853918.so
-Size (stripped)  : 2,139,752 bytes
-Size (unstripped): 11,862,872 bytes
-SHA256           : 671915d969264bfb7a7254611a6f779a272c843e4ea0caa0a220468512a61257
-SHA256 unstripped: 199e11da3ba311c3adfa8fbc3852b7528e0e2d93eef48df592e28beb1b8e8239
-Build-id (sha1)  : f269df3147ab348bde8e15563c4f8d4490e5a278
+File             : libgit2-49e408b.so       SONAME libgit2-49e408b.so
+Size (stripped)  : 2,190,352 bytes
+Size (unstripped): 12,211,352 bytes
+SHA256           : 96a8a95896cb426c434305ffb2f6dfa30260034736c2b6d513e86f80530e0cb3
+SHA256 unstripped: f730f27c3b25e846b23bf7dee64cdcb6853278fa6dcdf590164fecb7f9def6f8
+Build-id (sha1)  : 8c3b7075711abd509316e3ed8120adc095afed50
 ELF              : ELF64, AArch64
 Android API      : 33 (ELF note; NDK note r30 / 16248370)
 PT_LOAD align    : 16384 16384 16384 16384
 Dynamic deps     : libm.so libdl.so libc.so
-Exports          : 944 (940 git_*); no mbedtls_ / psa_ symbol exported or
+Exports          : 954 (950 git_*); no mbedtls_ / psa_ symbol exported or
                    imported
 Mbed TLS inside  : 713 mbedtls_* + 73 psa_* functions in the twin's symbol
                    table; everest / p256-m not linked
-Features         : 11 = THREADS | HTTPS | NSEC (from the machine code of
-                   git_libgit2_features, and returned at run time)
+Features         : 1723 = THREADS | HTTPS | NSEC | HTTP_PARSER | REGEX |
+                   AUTH_NTLM | COMPRESSION | SHA1 (from the machine code of
+                   git_libgit2_features)
 Gate             : verify.py on both twins + git2_features.h - ELF class/
                    machine ok, API 33 ok, 16 KB PT_LOAD ok, no W+X, SONAME ok,
                    NEEDED system-only, no GLIBC_, no TEXTREL/RPATH/RUNPATH,
-                   20/20 required exports, Mbed TLS private, features 11,
-                   build-ids match, 11/11 required Mbed TLS functions defined,
+                   20/20 required exports, Mbed TLS private, features 1723,
+                   build-ids match, 10/10 required Mbed TLS functions defined,
                    feature defines ok - PASSED
-Runtime          : smoke test PASSED on the API 35 x86_64 emulator through
-                   libndk_translation (see Android above). Translation is not
-                   an arm64 device; a device run remains worth doing.
-Reproducible     : YES - three from-scratch runs, identical stripped and
+Runtime          : NOT RUN for 1.9.7 (see Android above)
+Reproducible     : YES - two from-scratch runs, identical stripped and
                    unstripped sha256
-Adopted into native_libraries/android-arm64/ : YES, 2026-10-17, with
+Adopted into native_libraries/android-arm64/ : YES, 2026-11-18, with
                    LICENSE-Libgit2.txt, LICENSE-Xdiff.txt, LICENSE-MbedTls.txt
-                   and libgit2-5853918.so.provenance.txt; unstripped twin in
+                   and libgit2-49e408b.so.provenance.txt; unstripped twin in
                    unstripped/android-arm64/
 
 ================================================================================
 android-x64                                                       BUILT + PASSED
 ================================================================================
-Built            : 2026-10-17 15:18:25 UTC (third of three identical runs)
+Built            : 2026-11-19 03:37:23 UTC (second of two identical runs; the
+                   first 03:35:48 UTC)
 Built by         : android/build.py --arch all (both ABIs in one run)
-Build host       : Dell Precision 7770, LMDE 7, x86_64, podman 5.4.2
-Duration         : about 8s for this ABI
+Build host       : Dell Precision 7770, LMDE 7, x86_64, podman
+Duration         : 9s for this ABI in the second run, 7s in the first
 Network          : DISABLED during this build (interfaces: lo)
 Tool image       : codebrix-libgit2-build-x86_64 (cmake, ninja, Python only)
 NDK              : 30.0.16248370 (r30), mounted read-only
@@ -409,171 +419,91 @@ Compiler         : Android (16134705, +pgo, +bolt, +lto, +mlgo, based on r574158
                    x86_64-linux-android33 (ABI x86_64)
 cmake / ninja    : cmake version 4.4.3 / 1.13.2.git.kitware.jobserver-pipe-1
 Mbed TLS archives: libmbedtls.a 2,275,024 B, libmbedx509.a 553,516 B,
-                   libmbedcrypto.a 4,816,380 B (sha256 in BUILD-INFO.json)
+                   libmbedcrypto.a 4,816,380 B (sha256 in BUILD-INFO.json;
+                   the same sizes as the 1.8.6 builds')
 Warnings         : llhttp.c "unused variable 'avail'" x2 (upstream, harmless)
 
-File             : libgit2-5853918.so       SONAME libgit2-5853918.so
-Size (stripped)  : 2,187,256 bytes
-Size (unstripped): 11,391,096 bytes
-SHA256           : 4d055dd687f9a2b6581a19b45f4534ba4a89e44b783b41aff25a39fad8a9814a
-SHA256 unstripped: 9342d870cf599a7a3b48873dc2928d91fc33948af788f902ec894988a2a2bcb4
-Build-id (sha1)  : c0757c46cded48c7985f2b858bb06f87a3b9b0f5
+File             : libgit2-49e408b.so       SONAME libgit2-49e408b.so
+Size (stripped)  : 2,243,992 bytes
+Size (unstripped): 11,729,280 bytes
+SHA256           : 0fba706819d4a52c597ebfdab33be20eec4106627f84a65e202568775a6583c2
+SHA256 unstripped: f69ca61eef92e18c04abf5506e5861b9dc47bf3110c11a29c044cd806beb17ea
+Build-id (sha1)  : 6be173816ba4b17be6a88a2349f6ad56e2e723d5
 ELF              : ELF64, x86-64
 Android API      : 33 (ELF note; NDK note r30 / 16248370)
 PT_LOAD align    : 16384 16384 16384 16384
 Dynamic deps     : libm.so libdl.so libc.so
-Exports          : 944 (940 git_*); no mbedtls_ / psa_ symbol exported or
+Exports          : 954 (950 git_*); no mbedtls_ / psa_ symbol exported or
                    imported
 Mbed TLS inside  : 714 mbedtls_* + 73 psa_* functions in the twin's symbol
                    table; everest / p256-m not linked
-Features         : 11 = THREADS | HTTPS | NSEC (from the machine code, and at
-                   run time)
+Features         : 1723 (from the machine code)
 Gate             : verify.py, as android-arm64 - PASSED
-Runtime          : smoke test PASSED natively on the API 35 x86_64 emulator
-                   (see Android above)
-Reproducible     : YES - three from-scratch runs, identical stripped and
+Runtime          : NOT RUN for 1.9.7 (see Android above)
+Reproducible     : YES - two from-scratch runs, identical stripped and
                    unstripped sha256
-Adopted into native_libraries/android-x64/ : YES, 2026-10-17, with
+Adopted into native_libraries/android-x64/ : YES, 2026-11-18, with
                    LICENSE-Libgit2.txt, LICENSE-Xdiff.txt, LICENSE-MbedTls.txt
-                   and libgit2-5853918.so.provenance.txt; unstripped twin in
+                   and libgit2-49e408b.so.provenance.txt; unstripped twin in
                    unstripped/android-x64/
 
 ================================================================================
-win-x64                                    ADOPTED (LibGit2Sharp.NativeBinaries
-                                                    2.0.324)
+win-x64                                                                  PENDING
 ================================================================================
-Route            : ADOPTED - see "Windows (the two win-* entries)" above
-Path in nupkg    : runtimes/win-x64/native/git2-5853918.dll
-File             : git2-5853918.dll
-Size             : 2,012,160 bytes
-SHA256           : 45d0a0959f775776a499aa45119499aae8c512553f0c414b1ab43b6c9df73935
-Architecture     : PE32+ DLL, machine 0x8664 (x64); linker 14.44; OS/subsystem
-                   6.0; DllCharacteristics 0x4160 (HIGH_ENTROPY_VA,
-                   DYNAMIC_BASE, NX_COMPAT, GUARD_CF); not Authenticode-signed;
-                   link time 2026-07-20 11:27:43 UTC
-Version resource : 1.8.6, InternalName / OriginalFilename git2-5853918.dll
-Exports          : 944 - the same names as every other build
-Imports          : ADVAPI32 CRYPT32 KERNEL32 Secur32 WS2_32 - OS only; NO VC
-                   runtime (static CRT); no winhttp.dll (Schannel)
-Features         : 15 = THREADS | HTTPS | SSH | NSEC (machine code:
-                   movl $0xf,%eax; retq)
-Debug symbols    : none published (POGO entry only); nothing in unstripped/
-Gate             : static facts above verified on Linux; NOT executed
-Rebuild          : windows/build.libgit2.ps1 -x64 - written 2026-10-17, UNRUN
-Adopted into native_libraries/win-x64/ : YES, 2026-10-17, with
-                   LICENSE-Libgit2.txt, LICENSE-Xdiff.txt and
-                   git2-5853918.dll.provenance.txt
+No binary. To be built by Jeremy on a Windows machine:
+    windows\build.libgit2.ps1 -x64
+then adopt git2-49e408b.dll, git2-49e408b.lib, LICENSE-Libgit2.txt and
+LICENSE-Xdiff.txt as windows/README.txt describes, write
+native_libraries/win-x64/git2-49e408b.dll.provenance.txt, and replace this
+section with the build's BUILD-INFO.txt values.
 
 ================================================================================
-win-arm64                                  ADOPTED (LibGit2Sharp.NativeBinaries
-                                                    2.0.324)
+win-arm64                                                                PENDING
 ================================================================================
-Route            : ADOPTED - see "Windows (the two win-* entries)" above
-Path in nupkg    : runtimes/win-arm64/native/git2-5853918.dll
-File             : git2-5853918.dll
-Size             : 1,786,880 bytes
-SHA256           : 5bf69534d4fb36ea957f767c509f1529c542af2d9666b17046b9c0e893df9e6c
-Architecture     : PE32+ DLL, machine 0xAA64 (ARM64); linker 14.44;
-                   OS/subsystem 6.2; DllCharacteristics 0x4160; not
-                   Authenticode-signed; link time 2026-07-20 11:27:48 UTC
-Version resource : 1.8.6, InternalName / OriginalFilename git2-5853918.dll
-Exports          : 944 - the same names as every other build
-Imports          : the same five OS DLLs as win-x64; NO VC runtime
-Features         : 15 (machine code: mov w0, #0xf; ret)
-Debug symbols    : none published; nothing in unstripped/
-Gate             : static facts above verified on Linux; NOT executed
-Rebuild          : windows/build.libgit2.ps1 -arm64 - written 2026-10-17, UNRUN
-Adopted into native_libraries/win-arm64/ : YES, 2026-10-17, with
-                   LICENSE-Libgit2.txt, LICENSE-Xdiff.txt and
-                   git2-5853918.dll.provenance.txt
+No binary. To be built by Jeremy (on an ARM64 Windows machine for a smoke-test
+run, or cross-built on x64):
+    windows\build.libgit2.ps1 -arm64
+then adopt and record as for win-x64.
 
 ================================================================================
-osx-x64                                    ADOPTED (LibGit2Sharp.NativeBinaries
-                                                    2.0.324)
+osx-x64                                                                  PENDING
 ================================================================================
-Route            : ADOPTED - see "macOS (the two osx-* entries)" above
-Path in nupkg    : runtimes/osx-x64/native/libgit2-5853918.dylib
-File             : libgit2-5853918.dylib
-Size             : 1,258,704 bytes
-SHA256           : 8007619e2923b40383a5ba04bf11ff5fcc769cc9a0fbc017675da2e559b6eb5f
-Architecture     : thin Mach-O 64-bit dylib, x86_64
-Minimum macOS    : 14.0 (LC_BUILD_VERSION minos; SDK 14.5)
-LC_UUID          : CD886060-454D-345C-925A-BB5FC05DB175
-Install name     : @rpath/libgit2-5853918.1.8.dylib; no LC_RPATH
-Signature        : NONE (x86_64; the linker signs arm64 output only)
-Symbols          : NOT stripped (2,328 local symbols); no dSYM published
-Links            : CoreFoundation, Security, libiconv.2, libSystem.B - OS only
-Exports          : 944 - the same names as every other build
-Features         : 15 (machine code: movl $0xf,%eax)
-Gate             : static facts above verified on Linux; NOT executed
-Rebuild          : macos/build.sh x64 - written 2026-10-17, UNRUN
-Adopted into native_libraries/osx-x64/ : YES, 2026-10-17, with
-                   LICENSE-Libgit2.txt, LICENSE-Xdiff.txt and
-                   libgit2-5853918.dylib.provenance.txt
+No binary. To be built by Jeremy on a Mac (either kind; the smoke test runs on
+Intel, or under Rosetta 2 on Apple Silicon):
+    macos/build.sh x64
+then adopt libgit2-49e408b.dylib, LICENSE-Libgit2.txt and LICENSE-Xdiff.txt as
+macos/README.txt describes, write
+native_libraries/osx-x64/libgit2-49e408b.dylib.provenance.txt (minimum macOS
+above all), and replace this section with the build's BUILD-INFO.txt values.
 
 ================================================================================
-osx-arm64                                  ADOPTED (LibGit2Sharp.NativeBinaries
-                                                    2.0.324)
+osx-arm64                                                                PENDING
 ================================================================================
-Route            : ADOPTED - see "macOS (the two osx-* entries)" above
-Path in nupkg    : runtimes/osx-arm64/native/libgit2-5853918.dylib
-File             : libgit2-5853918.dylib
-Size             : 1,214,312 bytes
-SHA256           : 568df47ada6fa8a195757f54eb1e64ff13345e1cb995381071eaa259de9aac81
-Architecture     : thin Mach-O 64-bit dylib, arm64
-Minimum macOS    : 14.0 (LC_BUILD_VERSION minos; SDK 14.5)
-LC_UUID          : F189FEE4-B727-32FE-9E70-B37FE18B21C7
-Install name     : @rpath/libgit2-5853918.1.8.dylib; no LC_RPATH
-Signature        : LC_CODE_SIGNATURE present (linker ad-hoc); file identical
-                   to upstream's, so intact - not re-checked with codesign
-Symbols          : NOT stripped (2,311 local symbols); no dSYM published
-Links            : CoreFoundation, Security, libiconv.2, libSystem.B - OS only
-Exports          : 944 - the same names as every other build
-Features         : 15 (machine code: mov w0, #0xf; ret)
-Gate             : static facts above verified on Linux; NOT executed
-Rebuild          : macos/build.sh arm64 - written 2026-10-17, UNRUN
-Adopted into native_libraries/osx-arm64/ : YES, 2026-10-17, with
-                   LICENSE-Libgit2.txt, LICENSE-Xdiff.txt and
-                   libgit2-5853918.dylib.provenance.txt
+No binary. To be built by Jeremy on a Mac:
+    macos/build.sh arm64
+then adopt and record as for osx-x64.
 
 ================================================================================
-COMPARISON WITH UPSTREAM 2.0.324 - linux-x64 and linux-arm64 (record only)
+COMPARISON WITH THE 1.8.6 BUILDS (record only)
 ================================================================================
-We ship OUR Linux builds. Upstream's runtimes/linux-x64 and linux-arm64 files
-were extracted from the same .nupkg to ~/ClaudeHome/libgit2-upstream-scratch/
-(not into the repository) purely for this comparison. Upstream ships no
-linux-riscv64 and no Android binaries.
+The libgit2 1.8.6 binaries (commit 5853918c4c6a7b12f8becf4bd11ff4362ebb9020,
+file names *-5853918*) were shipped until 2026-11-18; their records - and the
+four Windows / macOS binaries adopted from LibGit2Sharp.NativeBinaries 2.0.324,
+with the comparison against upstream's Linux binaries - are in this file's git
+history. Same toolchains, same options, same images:
 
-                      upstream 2.0.324                ours (run B)
-  ------------------  ------------------------------  ------------------------
-  linux-x64 file      2,044,824 B, not stripped       1,923,136 B, stripped
-                      (symtab, no DWARF)              (twin 10,884,584 B with
-                      sha256 b7d3970367f22564...      DWARF in unstripped/)
-  linux-arm64 file    2,000,064 B, not stripped       1,988,360 B, stripped
-                      sha256 2b2f290398049694...      (twin 11,285,784 B)
-  toolchain           GCC 10.2.1 (Debian 11,          GCC 14.2.1 (AlmaLinux 8,
-                      kmturley/crossbuild)            manylinux_2_28)
-  SONAME              libgit2-5853918.so.1.8          libgit2-5853918.so.1.8
-  exports (nm -D)     944                             944 - IDENTICAL name set
-                                                      (diff empty, both RIDs)
-  undefined symbols   -                               IDENTICAL set (both RIDs)
-  NEEDED              libc.so.6 libdl.so.2            libc.so.6 libdl.so.2
-                      libpthread.so.0                 libpthread.so.0
-                                                      librt.so.1
-  glibc floor         2.25 (x64 versions 2.2.5 ...    2.25 - the IDENTICAL list
-                      2.25; arm64 2.17, 2.25)         of GLIBC_ versions
-  OpenSSL probe list  libssl.so.1.1/.1.0.0/.10/.3     the same
-  RPATH / TEXTREL     none / none                     none / none
-  features (run)      15 = THREADS|HTTPS|SSH|NSEC     15 - the same
-  smoke test          PASSED in our x64 / arm64       PASSED (the gate)
-                      images (incl. TLS init via
-                      libssl.so.1.1)
-
-  The one structural difference, librt.so.1 in NEEDED: libgit2's
-  src/CMakeLists.txt links -lrt whenever check_library_exists(rt
-  clock_gettime) succeeds, and this link is evidently not --as-needed, so
-  the entry stays although no symbol is taken from librt (the
-  undefined-symbol sets are identical). librt.so.1 is part of every glibc,
-  so this adds no requirement on the user's machine. riscv64 (glibc 2.39,
-  where librt is folded into libc) has only libc.so.6.
+                      1.8.6 (5853918)               1.9.7 (49e408b)
+  ------------------  ----------------------------  ----------------------------
+  linux-x64           1,923,136 B                   2,013,344 B
+  linux-arm64         1,988,360 B                   2,053,992 B
+  linux-riscv64       1,629,360 B                   1,707,288 B
+  android-arm64       2,139,752 B                   2,190,352 B
+  android-x64         2,187,256 B                   2,243,992 B
+  SONAME (Linux)      libgit2-5853918.so.1.8        libgit2-49e408b.so.1.9
+  exports             944                           954 (+11, -1: see Common)
+  NEEDED              unchanged on every RID
+  glibc floor         2.25 / 2.25 / 2.38            2.25 / 2.25 / 2.38
+  feature summary     unchanged on every RID
+  features (Linux)    15                            1727 (wider git_feature_t)
+  features (Android)  11                            1723
 ================================================================================

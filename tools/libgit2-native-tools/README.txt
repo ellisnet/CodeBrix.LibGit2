@@ -50,10 +50,10 @@ The things that live outside the folder, by Jeremy's stated exception:
 FOLDER MAP
 --------------------------------------------------------------------------------
   README.txt              this document
-  BUILD-PROVENANCE.txt    what was actually built (or adopted), when, by what,
-                          with what hashes - one section per runtime
-                          identifier, and the comparison with upstream's Linux
-                          binaries
+  BUILD-PROVENANCE.txt    what was actually built, when, by what, with what
+                          hashes - one section per runtime identifier (the
+                          four Windows / macOS ones PENDING), and the
+                          comparison with the 1.8.6 builds
   UPSTREAM.txt            where every vendored tree came from: commit, tag,
                           dates, licence, the exact copy commands, tree
                           checksums
@@ -68,10 +68,11 @@ FOLDER MAP
                           first rule is load-bearing - read the comment before
                           editing it
 
-  libgit2/                THE VENDORED LIBGIT2 - the full, unmodified tree at
-                          5853918c4c6a7b12f8becf4bd11ff4362ebb9020 (tag
-                          v1.8.6), including tests/ and every bundled
-                          dependency in deps/. GPLv2 + linking exception
+  libgit2/                THE VENDORED LIBGIT2 - the unmodified tree at
+                          49e408b3208bc3093757a1c2db938d3590f3f412 (tag
+                          v1.9.7), including tests/ and every bundled
+                          dependency in deps/, with upstream's .github/ (CI
+                          workflows) left out. GPLv2 + linking exception
   mbedtls/                THE VENDORED MBED TLS - the full, unmodified 3.6.7
                           LTS tree (tag v3.6.7) with its framework/ submodule.
                           Apache-2.0 OR GPL-2.0-or-later. Used ONLY by the two
@@ -80,9 +81,10 @@ FOLDER MAP
                           LibGit2Sharp.NativeBinaries' build files
                           (build.libgit2.sh / .ps1, dockerbuild.sh,
                           docker/linux + musl, UpdateLibgit2ToSha.ps1, the
-                          nuget.package props and libgit2_hash.txt) - a RECORD
-                          of how the adopted binaries were made; no script
-                          here uses them
+                          nuget.package props and libgit2_hash.txt) at their
+                          libgit2 1.8.6 release - a HISTORICAL record of the
+                          recipe our scripts were adapted from; upstream has
+                          no packaging for 1.9, and no script here uses them
 
   linux/                  linux-x64, linux-arm64, linux-riscv64
                           pins.env, build.sh, container-build.sh,
@@ -92,13 +94,16 @@ FOLDER MAP
                           linked Mbed TLS, NDK r30, API 33, 16 KB pages)
                           pins.json, build.py, verify.py, README.txt
   windows/                win-x64, win-arm64. build.libgit2.ps1 (upstream's
-                          script adapted: MSVC + CMake, Schannel), README.txt.
-                          Written 2026-10-17, UNRUN: the shipped win-* DLLs
-                          are ADOPTED from LibGit2Sharp.NativeBinaries 2.0.324
+                          script adapted: MSVC + CMake, Schannel; also keeps
+                          the DLL's import library), README.txt. Written
+                          2026-10-17, re-pointed at 1.9.7 2026-11-18, UNRUN:
+                          the win-* RIDs are PENDING - no binary until Jeremy
+                          runs it on Windows
   macos/                  osx-arm64, osx-x64. build.sh (upstream's Darwin
                           branch adapted: SecureTransport), README.txt.
-                          Written 2026-10-17, UNRUN: the shipped osx-* dylibs
-                          are ADOPTED from 2.0.324
+                          Written 2026-10-17, re-pointed at 1.9.7 2026-11-18,
+                          UNRUN: the osx-* RIDs are PENDING - no binary until
+                          Jeremy runs it on a Mac
 
   unstripped/             COMMITTED. The pre-strip twin of every native built
                           here, one folder per RID, with SHA256SUMS and a
@@ -127,36 +132,41 @@ THE NINE RUNTIME IDENTIFIERS
 --------------------------------------------------------------------------------
   RID            built by                                  shipped file
   -------------  ----------------------------------------- ---------------------
-  linux-x64      linux/build.sh x64                        libgit2-5853918.so
-  linux-arm64    linux/build.sh arm64                      libgit2-5853918.so
-  linux-riscv64  linux/build.sh riscv64                    libgit2-5853918.so
-  android-arm64  android/build.py --arch arm64             libgit2-5853918.so
-  android-x64    android/build.py --arch x64               libgit2-5853918.so
-  win-x64        ADOPTED; rebuild: windows/build.libgit2.ps1 -x64
-                                                           git2-5853918.dll
-  win-arm64      ADOPTED; rebuild: windows/build.libgit2.ps1 -arm64
-                                                           git2-5853918.dll
-  osx-x64        ADOPTED; rebuild: macos/build.sh x64      libgit2-5853918.dylib
-  osx-arm64      ADOPTED; rebuild: macos/build.sh arm64    libgit2-5853918.dylib
+  linux-x64      linux/build.sh x64                        libgit2-49e408b.so
+  linux-arm64    linux/build.sh arm64                      libgit2-49e408b.so
+  linux-riscv64  linux/build.sh riscv64                    libgit2-49e408b.so
+  android-arm64  android/build.py --arch arm64             libgit2-49e408b.so
+  android-x64    android/build.py --arch x64               libgit2-49e408b.so
+  win-x64        PENDING: windows/build.libgit2.ps1 -x64   git2-49e408b.dll
+                                                           (+ git2-49e408b.lib)
+  win-arm64      PENDING: windows/build.libgit2.ps1 -arm64 git2-49e408b.dll
+                                                           (+ git2-49e408b.lib)
+  osx-x64        PENDING: macos/build.sh x64               libgit2-49e408b.dylib
+  osx-arm64      PENDING: macos/build.sh arm64             libgit2-49e408b.dylib
 
 The three Linux and the two Android RIDs are BUILT HERE from libgit2/ (and
-mbedtls/). The Windows and macOS binaries are ADOPTED from
-LibGit2Sharp.NativeBinaries 2.0.324, which built them from this same libgit2
-commit (ruling of 2026-10-17); the scripts that rebuild them from libgit2/
-live in windows/ and macos/ all the same, so every target can be rebuilt from
-this repository alone. Upstream's win-x86, linux-arm, linux-ppc64le and musl
-RIDs are not shipped. BUILD-PROVENANCE.txt says, per RID, which route each
-shipped binary took.
+mbedtls/). The Windows and macOS RIDs are PENDING: for libgit2 1.8.6 their
+binaries were adopted from LibGit2Sharp.NativeBinaries 2.0.324, but upstream
+has published no libgit2 1.9 binaries, so for 1.9.7 they must be BUILT with
+the scripts in windows/ and macos/ (never yet run) on Jeremy's Windows machine
+and Mac. Until then native_libraries/ has no binary for those four RIDs and
+the package packs none for them. Upstream's win-x86, linux-arm, linux-ppc64le
+and musl RIDs are not shipped. BUILD-PROVENANCE.txt says, per RID, which route
+each binary took.
+
+The Windows build also keeps the MSVC import library (git2-49e408b.lib) beside
+each DLL in native_libraries/win-<arch>/, for native tools that link against
+the DLL; it is not packed into the NuGet package.
 
 The shipped binaries live in ../../native_libraries/<rid>/, each with a
 <file>.provenance.txt beside it; the package packs them into
 runtimes/<rid>/native/.
 
-THE NAMES KEEP THE COMMIT SUFFIX on purpose - libgit2-5853918.so,
-git2-5853918.dll, libgit2-5853918.dylib, exactly upstream's names
-(-DLIBGIT2_FILENAME=git2-5853918) - so this library can never collide with
+THE NAMES KEEP THE COMMIT SUFFIX on purpose - libgit2-49e408b.so,
+git2-49e408b.dll, libgit2-49e408b.dylib, upstream's naming scheme
+(-DLIBGIT2_FILENAME=git2-49e408b) - so this library can never collide with
 upstream LibGit2Sharp's copy or with a system libgit2 loaded into the same
-process. The Linux SONAME (libgit2-5853918.so.1.8) stays inside the file, as
+process. The Linux SONAME (libgit2-49e408b.so.1.9) stays inside the file, as
 built; on Android the SONAME is the plain file name.
 
 Every RID folder also gets LICENSE-Libgit2.txt - a verbatim copy of libgit2's
@@ -170,12 +180,15 @@ plainly LICENSE collides with any other package that ships one there.
 
 THE VENDORED COMMITS
 --------------------------------------------------------------------------------
-  libgit2   5853918c4c6a7b12f8becf4bd11ff4362ebb9020 = tag v1.8.6 (2026-07-18)
-            - the commit LibGit2Sharp.NativeBinaries 2.0.324 pins, so the
-            managed wrapper, this source and every shipped binary describe one
-            C API.
+  libgit2   49e408b3208bc3093757a1c2db938d3590f3f412 = tag v1.9.7 (released
+            2026-08-13), vendored 2026-11-18 from the release tarball; every
+            shipped binary is built from it, so the managed wrapper, this
+            source and the binaries describe one C API. (Until 2026-11-18:
+            1.8.6, 5853918c4c6a, the commit LibGit2Sharp.NativeBinaries
+            2.0.324 pins.)
   Mbed TLS  068ff080b369adfac81509f9b57b2afabaf82dc5 = tag v3.6.7, the newest
             3.6 LTS release on 2026-10-17, with framework/ at dde0c4a0e448.
+            Not upgraded with the move to libgit2 1.9.7.
 
 UPSTREAM.txt explains both and records how to verify the snapshots.
 
