@@ -51,8 +51,9 @@ FOLDER MAP
 --------------------------------------------------------------------------------
   README.txt              this document
   BUILD-PROVENANCE.txt    what was actually built, when, by what, with what
-                          hashes - one section per runtime identifier (the
-                          two Windows ones PENDING), and the comparison with
+                          hashes - one section per runtime identifier (all
+                          nine built; win-arm64's smoke test still unrun on
+                          ARM64 hardware), and the comparison with
                           the 1.8.6 builds
   UPSTREAM.txt            where every vendored tree came from: commit, tag,
                           dates, licence, the exact copy commands, tree
@@ -96,9 +97,10 @@ FOLDER MAP
   windows/                win-x64, win-arm64. build.libgit2.ps1 (upstream's
                           script adapted: MSVC + CMake, Schannel; also keeps
                           the DLL's import library), README.txt. Written
-                          2026-10-17, re-pointed at 1.9.7 2026-11-18, UNRUN:
-                          the win-* RIDs are PENDING - no binary until Jeremy
-                          runs it on Windows
+                          2026-10-17, re-pointed at 1.9.7 2026-11-18, first
+                          run 2026-11-19 on Jeremy's x64 Windows machine: both
+                          win-* RIDs built and adopted (win-arm64 cross-built,
+                          its smoke test unrun)
   macos/                  osx-arm64, osx-x64. build.sh (upstream's Darwin
                           branch adapted: SecureTransport), README.txt.
                           Written 2026-10-17, re-pointed at 1.9.7 2026-11-18,
@@ -138,21 +140,23 @@ THE NINE RUNTIME IDENTIFIERS
   linux-riscv64  linux/build.sh riscv64                    libgit2-49e408b.so
   android-arm64  android/build.py --arch arm64             libgit2-49e408b.so
   android-x64    android/build.py --arch x64               libgit2-49e408b.so
-  win-x64        PENDING: windows/build.libgit2.ps1 -x64   git2-49e408b.dll
+  win-x64        windows/build.libgit2.ps1 -x64            git2-49e408b.dll
                                                            (+ git2-49e408b.lib)
-  win-arm64      PENDING: windows/build.libgit2.ps1 -arm64 git2-49e408b.dll
+  win-arm64      windows/build.libgit2.ps1 -arm64          git2-49e408b.dll
                                                            (+ git2-49e408b.lib)
   osx-x64        macos/build.sh x64                        libgit2-49e408b.dylib
   osx-arm64      macos/build.sh arm64                      libgit2-49e408b.dylib
 
 The three Linux and the two Android RIDs are BUILT HERE from libgit2/ (and
 mbedtls/) on the Linux machine, and the two macOS RIDs on Jeremy's Mac
-(2026-11-19). The Windows RIDs are PENDING: for libgit2 1.8.6 their binaries
-(and the macOS ones) were adopted from LibGit2Sharp.NativeBinaries 2.0.324,
-but upstream has published no libgit2 1.9 binaries, so for 1.9.7 they must be
-BUILT with the script in windows/ (never yet run) on Jeremy's Windows machine.
-Until then native_libraries/ has no binary for those two RIDs and the package
-packs none for them. Upstream's win-x86, linux-arm, linux-ppc64le
+(2026-11-19), and the two Windows RIDs on Jeremy's x64 Windows machine
+(2026-11-19). For libgit2 1.8.6 the Windows binaries (and the macOS ones) were
+adopted from LibGit2Sharp.NativeBinaries 2.0.324, but upstream has published no
+libgit2 1.9 binaries, so for 1.9.7 they were BUILT with the script in windows/.
+win-arm64 is cross-built from x64 and has not been executed yet: its smoke test
+is compiled but unrun, pending an ARM64 Windows machine. Pass a short neutral
+-BuildRoot (C:\cbx-lg2 was used) - see windows/README.txt, STATUS.
+Upstream's win-x86, linux-arm, linux-ppc64le
 and musl RIDs are not shipped. BUILD-PROVENANCE.txt says, per RID, which route
 each binary took.
 

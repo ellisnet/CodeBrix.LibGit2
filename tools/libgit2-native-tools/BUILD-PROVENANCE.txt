@@ -13,11 +13,12 @@ section here is updated from that build's output/<rid>/BUILD-INFO.txt (or
 BUILD-INFO.json) and the <file>.provenance.txt beside the binary is written from
 the same values.
 
-STATE ON 2026-11-19: libgit2 1.9.7. Seven RIDs BUILT HERE and gated (linux-x64,
-linux-arm64, linux-riscv64, android-arm64, android-x64 on the Linux machine;
-osx-arm64, osx-x64 on Jeremy's Mac on 2026-11-19). Two RIDs PENDING - to be
-built by Jeremy on his Windows machine (win-x64, win-arm64); there is NO
-upstream binary to adopt for libgit2 1.9.
+STATE ON 2026-11-19: libgit2 1.9.7. ALL NINE RIDs BUILT HERE and gated
+(linux-x64, linux-arm64, linux-riscv64, android-arm64, android-x64 on the Linux
+machine; osx-arm64, osx-x64 on Jeremy's Mac; win-x64, win-arm64 on Jeremy's x64
+Windows machine, all on 2026-11-19). win-arm64 is cross-built and has NEVER
+BEEN EXECUTED: its smoke test is compiled but unrun (see its entry). There is
+no upstream binary for libgit2 1.9; nothing here is adopted from upstream.
 
 Common to every entry below
 --------------------------------------------------------------------------------
@@ -53,7 +54,8 @@ Common to every entry below
                     2048 - and sets HTTP_PARSER, REGEX, COMPRESSION and SHA1
                     unconditionally. So the SAME configuration returns a larger
                     git_libgit2_features() than 1.8.6 did: Linux 1727 (was 15),
-                    Android 1723 (was 11), Windows 1983 expected (was 15), macOS
+                    Android 1723 (was 11), Windows 1983 (was 15; observed on
+                    win-x64 2026-11-19), macOS
                     1791 (was 15; observed 2026-11-19). The low four bits are
                     unchanged everywhere.
 
@@ -187,26 +189,44 @@ Android (the two android-* entries)
                     output/android-<arch>/ and can be pushed and run as
                     android/README.txt describes.
 
-Windows (the two win-* entries)                                        PENDING
+Windows (the two win-* entries)
 --------------------------------------------------------------------------------
-  State           : NO BINARY. The adopted 1.8.6 DLLs (LibGit2Sharp.
-                    NativeBinaries 2.0.324) were REMOVED on 2026-11-18: they
-                    are the wrong ABI under an old name. Upstream has
-                    published no libgit2 1.9 binaries, so these RIDs must be
-                    BUILT, by Jeremy, on a Windows machine
-  Route           : windows/build.libgit2.ps1 -x64 / -arm64 - written
-                    2026-10-17, re-pointed at 1.9.7 on 2026-11-18, NEVER RUN
+  History         : the adopted 1.8.6 DLLs (LibGit2Sharp.NativeBinaries
+                    2.0.324) were REMOVED on 2026-11-18 - the wrong ABI under
+                    an old name - and upstream has published no libgit2 1.9
+                    binaries, so both RIDs were BUILT here on 2026-11-19
+  Route           : windows/build.libgit2.ps1 -x64 -arm64 -BuildRoot C:\cbx-lg2
+                    - written 2026-10-17, re-pointed at 1.9.7 on 2026-11-18,
+                    FIRST RUN 2026-11-19. It ran UNCHANGED and needed no fix
+  Build host      : Jeremy's x64 desktop (Dell Precision 7770), Windows 11 Pro
+                    10.0.26300 (AMD64), Visual Studio Professional 2026 18.12.1
+                    [18.12.12412.261], MSVC toolset 14.52.37025 (cl 19.52.37029
+                    for x64 and, HostX64\ARM64, for ARM64), Windows SDK
+                    10.0.26100, cmake 4.4.3 (pip wheel) with the "Visual Studio
+                    18 2026" generator, PowerShell 7
+  Build root      : C:\cbx-lg2, NOT the script's default %TEMP%. libgit2
+                    compiles __FILE__ into its error and assert messages and
+                    MSVC has no -ffile-prefix-map, so the build root's path is
+                    in the DLL. The first 2026-11-19 build used the default and
+                    embedded the builder's user-profile path
+                    (C:\Users\<name>\AppData\Local\Temp\...); it passed the gate
+                    but was DISCARDED and rebuilt with -BuildRoot C:\cbx-lg2.
+                    Upstream's 1.8.6 DLLs carried their CI path the same way
+                    (D:\a\libgit2sharp.nativebinaries\...). Use a short neutral
+                    -BuildRoot on every future Windows build
   cmake options   : -A x64|ARM64 -D USE_SSH=exec -D USE_HTTPS=Schannel
                     -D BUILD_TESTS=OFF -D BUILD_CLI=OFF
                     -D LIBGIT2_FILENAME=git2-49e408b; Release; MSVC (upstream's
                     1.8.6-era recipe, unchanged; every option exists in 1.9.7)
-  Expected        : git2-49e408b.dll + its import library git2-49e408b.lib
+  Result          : git2-49e408b.dll + its import library git2-49e408b.lib
                     (kept for native tools that link against the DLL; adopted
                     into native_libraries/win-<arch>/, NOT packed); features
                     1983 = THREADS | HTTPS | SSH | NSEC | HTTP_PARSER | REGEX |
-                    AUTH_NTLM | AUTH_NEGOTIATE | COMPRESSION | SHA1 (derived from
-                    src/libgit2/libgit2.c, not yet observed); imports OS-only,
-                    static CRT; Schannel, not WinHTTP
+                    AUTH_NTLM | AUTH_NEGOTIATE | COMPRESSION | SHA1 - derived
+                    from src/libgit2/libgit2.c and OBSERVED on win-x64; imports
+                    ADVAPI32 CRYPT32 KERNEL32 Secur32 WS2_32 - exactly the
+                    1.8.6 DLLs' set, so $AllowedImports needed no change; static
+                    CRT; Schannel, not WinHTTP
   Gate            : windows/README.txt, THE GATE
 
 macOS (the two osx-* entries)
@@ -477,22 +497,88 @@ Adopted into native_libraries/android-x64/ : YES, 2026-11-18, with
                    unstripped/android-x64/
 
 ================================================================================
-win-x64                                                                  PENDING
+win-x64                                                           BUILT + PASSED
 ================================================================================
-No binary. To be built by Jeremy on a Windows machine:
-    windows\build.libgit2.ps1 -x64
-then adopt git2-49e408b.dll, git2-49e408b.lib, LICENSE-Libgit2.txt and
-LICENSE-Xdiff.txt as windows/README.txt describes, write
-native_libraries/win-x64/git2-49e408b.dll.provenance.txt, and replace this
-section with the build's BUILD-INFO.txt values.
+Built            : 2026-11-19 05:32:11 UTC
+Built by         : windows\build.libgit2.ps1 -x64 -arm64 -BuildRoot C:\cbx-lg2
+                   (native, x64 host) - script unchanged
+Duration         : 71s - configure, build, gate
+Toolchain        : cl 19.52.37029 for x64, cmake 4.4.3, "Visual Studio 18 2026"
+                   -A x64 (see "Windows" above)
+Warnings         : cl C4267 / C4244 / C4018 in the bundled xdiff only (17 per
+                   RID; upstream code)
+
+File             : git2-49e408b.dll (PE32+, machine 0x8664)
+Size             : 2,182,656 bytes
+SHA256           : 57e17c62ced01f96fd88dd041baee399f3102b09682ef7ad2dd1baa4c75dfd2d
+                   NOT byte-reproducible (link.exe timestamp); compare size and
+                   gate, not the hash
+Import library   : git2-49e408b.lib, 228,256 bytes, sha256
+                   7e6c537c4223a6b5d2279ad312093e56a0bdd30ff75e643a6b5747a1b726becf
+                   (machine 8664, 950 git_* names; adopted, not packed)
+Exports          : 954, every REQUIRED_SYMBOLS name present
+Imports          : ADVAPI32.dll CRYPT32.dll KERNEL32.dll Secur32.dll WS2_32.dll
+Debug symbols    : none (Release links without /DEBUG, as upstream)
+Features         : HTTPS Schannel, SSH OpenSSH exec, SHA1 CollisionDetection,
+                   SHA256 Win32, regex bundled PCRE, zlib bundled, llhttp,
+                   xdiff, nanoseconds, threadsafe
+Smoke test       : PASSED on the build host - version 1.9.7, features 1983,
+                   init, blob hash ce013625030ba8dba906f756967f9e9ca394464a,
+                   repository init/write/open, shutdown
+Build paths      : C:\cbx-lg2\win-x64\libgit2\src\... only (no user-profile or
+                   repository path)
+Managed tests    : dotnet test --project tests/CodeBrix.LibGit2.Tests, Debug AND
+                   Release, on the build host, against this exact file (checked
+                   by sha256 in the test output): 1381 tests, 0 failed, 32
+                   skipped (30 network, 1 "Not supported by libgit2 as yet", 1
+                   upstream ignorecase), 2026-11-19 - the first run of the 1.9
+                   interop on Windows
+Adopted into native_libraries/win-x64/ : YES, 2026-11-19, with the import
+                   library, LICENSE-Libgit2.txt and LICENSE-Xdiff.txt (identical
+                   to the files already there) and
+                   git2-49e408b.dll.provenance.txt
 
 ================================================================================
-win-arm64                                                                PENDING
+win-arm64                       BUILT (cross) - STATIC GATE PASSED, SMOKE UNRUN
 ================================================================================
-No binary. To be built by Jeremy (on an ARM64 Windows machine for a smoke-test
-run, or cross-built on x64):
-    windows\build.libgit2.ps1 -arm64
-then adopt and record as for win-x64.
+*** NEVER EXECUTED. Cross-built on x64; the smoke test was compiled, not run,
+*** and the managed suite has not run against it.
+
+Built            : 2026-11-19 05:33:22 UTC
+Built by         : windows\build.libgit2.ps1 -x64 -arm64 -BuildRoot C:\cbx-lg2
+                   (cross: vcvarsall x64_arm64, -A ARM64) - script unchanged
+Duration         : 66s - configure, build, gate
+Toolchain        : cl 19.52.37029 for ARM64 (HostX64\ARM64), cmake 4.4.3,
+                   "Visual Studio 18 2026" -A ARM64 (see "Windows" above)
+Warnings         : as win-x64 (xdiff only)
+
+File             : git2-49e408b.dll (PE32+, machine 0xAA64)
+Size             : 2,047,488 bytes
+SHA256           : 3ce56914e206ed072af18acac7f9abed7ef4984882f50aab67848d1e138a097a
+                   NOT byte-reproducible (link.exe timestamp)
+Import library   : git2-49e408b.lib, 228,256 bytes, sha256
+                   9b08d390884f5b0655159ffa5ad23fd0e5972a2e100adabdd0f371b2e2ecdf8b
+                   (machine AA64, 950 git_* names; adopted, not packed)
+Exports          : 954, every REQUIRED_SYMBOLS name present
+Imports          : ADVAPI32.dll CRYPT32.dll KERNEL32.dll Secur32.dll WS2_32.dll
+Debug symbols    : none
+Features         : the same summary as win-x64 (all required lines present)
+Smoke test       : COMPILED, NOT RUN - an x64 host cannot execute ARM64 code.
+                   The ARM64 smoke-test.exe from this run is kept in
+                   output/win-arm64/ (git-ignored; sha256
+                   449298fae3727c6b1c28128c2ae12639c5e9d79e0a4324493f924f8fe2908f01)
+Build paths      : C:\cbx-lg2\win-arm64\libgit2\src\... only
+To finish it     : on an ARM64 Windows machine run
+                       smoke-test.exe <full path>\git2-49e408b.dll
+                   and expect version 1.9.7, features 1983, SMOKE TEST PASSED;
+                   then the managed suite on an ARM64 .NET 10 SDK. Record the
+                   device, date and result here and in the provenance file
+Adopted into native_libraries/win-arm64/ : YES, 2026-11-19, with the import
+                   library, both licence files and
+                   git2-49e408b.dll.provenance.txt - adopted with the smoke
+                   test unrun (the dav1d and AV1 win-arm64 precedent), so the
+                   package has the RID while verification is outstanding. If it
+                   fails on hardware, pull it from native_libraries/
 
 ================================================================================
 osx-x64                                                           BUILT + PASSED
@@ -584,6 +670,11 @@ history. Same toolchains, same options, same images:
   osx-arm64           1,214,312 B (adopted from     1,266,232 B (built here)
                       upstream 2.0.324)
   osx-x64             1,258,704 B (adopted)         1,310,896 B (built here)
+  win-x64             2,012,160 B (adopted)         2,182,656 B (built here)
+  win-arm64           1,786,880 B (adopted)         2,047,488 B (built here)
+  imports (Windows)   ADVAPI32 CRYPT32 KERNEL32     unchanged
+                      Secur32 WS2_32
+  features (Windows)  15                            1983
   minimum macOS       14.0                          14.0
   SONAME (Linux)      libgit2-5853918.so.1.8        libgit2-49e408b.so.1.9
   exports             944                           954 (+11, -1: see Common)

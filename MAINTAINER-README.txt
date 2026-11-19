@@ -289,10 +289,12 @@ native_libraries/<rid>/<binary>.provenance.txt):
       built first from the vendored tools/libgit2-native-tools/mbedtls/ and
       linked STATICALLY, and no SSH transport.
   win-x64, win-arm64
-      TO BE BUILT on Jeremy's Windows x64 machine by
+      BUILT on Jeremy's Windows x64 machine (2026-11-19) by
       tools/libgit2-native-tools/windows/build.libgit2.ps1 (MSVC, static C
-      runtime, HTTPS via Schannel, SSH = exec). See BUILDING THE WINDOWS AND
-      MACOS BINARIES below.
+      runtime, HTTPS via Schannel, SSH = exec), with -BuildRoot C:\cbx-lg2.
+      win-arm64 is cross-built there; its smoke test is compiled but not yet
+      run on ARM64 hardware. See BUILDING THE WINDOWS AND MACOS BINARIES
+      below.
   osx-arm64, osx-x64
       BUILT on Jeremy's Apple Silicon Mac (2026-11-19) by
       tools/libgit2-native-tools/macos/build.sh (Apple clang, HTTPS via
@@ -301,7 +303,7 @@ native_libraries/<rid>/<binary>.provenance.txt):
       2. See the same section.
 
 A RID that has not been built yet has NO binary in native_libraries/<rid>/
-(only its licence files) - as of 2026-11-19 that is win-x64 and win-arm64.
+(only its licence files) - as of 2026-11-19 there is none: all nine are built.
 The csproj packs each native file only when it exists, so the package still
 builds - and silently lacks that platform. DO NOT PUBLISH until all nine are
 present (PACKAGING AND PUBLISHING has the check).
@@ -391,10 +393,11 @@ BUILDING THE WINDOWS AND MACOS BINARIES
 Four of the nine binaries cannot be built on the Linux development machine.
 The two scripts below were written on Linux. The macOS one was FIRST RUN on
 2026-11-19 and needed two fixes (recorded in
-tools/libgit2-native-tools/BUILD-PROVENANCE.txt); the Windows one HAS NEVER
-BEEN RUN. Expect to fix something on its first real run; when that happens
-fix the script, note what was wrong in BUILD-PROVENANCE.txt, and update the
-STATUS block at the top of that platform's README.txt.
+tools/libgit2-native-tools/BUILD-PROVENANCE.txt); the Windows one was FIRST
+RUN the same day and needed none - but it must be given a short neutral
+-BuildRoot (step 2 below). If either breaks on a later run, fix the script,
+note what was wrong in BUILD-PROVENANCE.txt, and update the STATUS block at
+the top of that platform's README.txt.
 
 Before either: pull the repository so the machine has the 1.9.7 tree, pins and
 scripts. The scripts download nothing and install nothing; they stop with a
@@ -402,6 +405,10 @@ message when a prerequisite is missing.
 
 ON THE WINDOWS x64 MACHINE (builds win-x64 AND win-arm64)
 ----------------------------------------------------------
+DONE 2026-11-19 for libgit2 1.9.7 (Dell Precision 7770, Windows 11 Pro,
+Visual Studio Professional 2026 18.12.1): both RIDs built, gated and adopted;
+win-x64 passed the smoke test and the managed suite, win-arm64 is cross-built
+with its smoke test unrun. The steps below are what to do the next time.
 Detailed reference: tools/libgit2-native-tools/windows/README.txt.
 
  1. Prerequisites (once):
@@ -417,7 +424,12 @@ Detailed reference: tools/libgit2-native-tools/windows/README.txt.
 
  2. Build both, from PowerShell:
         cd tools\libgit2-native-tools\windows
-        .\build.libgit2.ps1 -x64 -arm64
+        .\build.libgit2.ps1 -x64 -arm64 -BuildRoot C:\cbx-lg2
+    The -BuildRoot matters: libgit2 compiles source file paths into the DLL
+    and MSVC cannot remap them, so the default build root under %TEMP% would
+    put the builder's user-profile path into a shipped binary. If Strawberry
+    Perl is installed, take C:\Strawberry\c\bin off PATH for the build (its
+    older MinGW cmake would otherwise be found first).
     Each architecture is configured, built, and checked by the script's gate
     (correct machine type; all required exports; operating-system imports
     only - a Visual C++ runtime import means the static runtime did not take;
@@ -433,8 +445,9 @@ Detailed reference: tools/libgit2-native-tools/windows/README.txt.
         stays unexecuted until someone runs it on ARM64 Windows; record that
         in its provenance.
       - The expected feature mask in the script (1983) was DERIVED from the
-        libgit2 source, never observed. If the smoke test reports another
-        number, find out which feature differs before changing the script.
+        libgit2 source and OBSERVED on win-x64 on 2026-11-19. If a later
+        smoke test reports another number, find out which feature differs
+        before changing the script.
       - The list of allowed imported DLLs was written from the 1.8.6 builds.
         If 1.9.7 imports another Windows system DLL the gate stops; that is
         something to look at and record, then add to the list.
@@ -455,9 +468,11 @@ Detailed reference: tools/libgit2-native-tools/windows/README.txt.
  5. Run the managed tests on Windows (they exercise the x64 DLL):
         dotnet build CodeBrix.LibGit2.slnx -c Release
         dotnet test --solution CodeBrix.LibGit2.slnx -c Release
-    The interop changes for libgit2 1.9 have only ever been run on Linux, so
-    this run is the first proof on Windows. The Linux result to compare with:
-    1381 tests, 0 failed, 34 skipped.
+    The Linux result to compare with: 1381 tests, 0 failed, 34 skipped.
+    Result 2026-11-19 (win-x64 DLL, Debug and Release, run as dotnet test
+    --project tests/CodeBrix.LibGit2.Tests): 1381 tests, 0 failed, 32
+    skipped - the first proof of the 1.9 interop on Windows. The win-arm64
+    DLL has not been run under the suite (no ARM64 machine yet).
 
 ON THE APPLE SILICON MAC (builds osx-arm64 AND osx-x64)
 --------------------------------------------------------

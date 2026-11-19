@@ -1,0 +1,102 @@
+git2-49e408b.dll -- Windows on ARM64 (win-arm64)
+================================================================================
+This binary was BUILT HERE, from the libgit2 source snapshot vendored in this
+repository, by:
+
+    tools/libgit2-native-tools/windows/build.libgit2.ps1 -x64 -arm64
+        -BuildRoot C:\cbx-lg2
+
+on Jeremy's x64 Windows machine with Microsoft's own toolchain - CROSS-BUILT
+for ARM64 (vcvarsall x64_arm64, cmake -A ARM64). Nothing was downloaded; the
+build reaches nothing outside this repository. The script had never run
+before 2026-11-19; it ran unchanged and needed no fix.
+
+*** THIS BINARY HAS NEVER BEEN EXECUTED. An x64 machine cannot run ARM64
+*** code, so the smoke test was compiled but not run, and the managed suite
+*** has not been run against it. Every static check passed. Finish it on an
+*** ARM64 Windows machine (see "To finish the gate" below).
+
+libgit2 version   : 1.9.7 (tag v1.9.7, released 2026-08-13)
+libgit2 commit    : 49e408b3208bc3093757a1c2db938d3590f3f412
+Source            : tools/libgit2-native-tools/libgit2/ (unmodified, .github/
+                    left out; see tools/libgit2-native-tools/UPSTREAM.txt),
+                    copied to C:\cbx-lg2\win-arm64\libgit2 for the build
+Patches applied   : none
+
+Built             : 2026-11-19 05:33:22 UTC
+Build duration    : 66s (configure + build + gate)
+Build host        : Dell Precision 7770, Windows 11 Pro 10.0.26300 (AMD64) -
+                    cross-compiling for ARM64
+Toolchain         : Visual Studio Professional 2026 18.12.1 [18.12.12412.261]
+                    Microsoft C/C++ Optimizing Compiler 19.52.37029 for ARM64
+                    (HostX64\ARM64, MSVC toolset 14.52.37025), Windows SDK
+                    10.0.26100
+                    cmake version 4.4.3, generator "Visual Studio 18 2026"
+CMake options     : -A ARM64 -D USE_SSH=exec -D USE_HTTPS=Schannel
+                    -D BUILD_TESTS=OFF -D BUILD_CLI=OFF
+                    -D LIBGIT2_FILENAME=git2-49e408b
+                    then cmake --build . --config Release
+                    (= upstream build.libgit2.ps1's recipe); libgit2's MSVC
+                    defaults: STATIC_CRT=ON (/MT), /O2 /GL /Gy, /LTCG /OPT:REF
+                    /OPT:ICF; Release links without /DEBUG, so no .pdb
+Build root        : C:\cbx-lg2 - outside the user profile on purpose. libgit2
+                    compiles __FILE__ into its error and assert messages and
+                    MSVC has no -ffile-prefix-map, so source paths under the
+                    build root are in the DLL (C:\cbx-lg2\win-arm64\libgit2\src\
+                    ...). Upstream's 1.8.6 DLLs carried their CI path the same
+                    way (D:\a\libgit2sharp.nativebinaries\...). A first build
+                    with the script's default build root (%TEMP%) embedded the
+                    builder's user-profile path and was discarded.
+
+Features (libgit2's CMake summary):
+                    identical to win-x64: threadsafe, nanoseconds, HTTPS using
+                    Schannel, SHA1 using CollisionDetection, SHA256 using
+                    Win32, http-parser bundled (llhttp), regex using bundled
+                    PCRE, xdiff bundled, SSH using OpenSSH exec support, zlib
+                    bundled
+git_libgit2_features(): expected 1983 (as win-x64) - NOT OBSERVED, smoke test
+                    not run
+
+Architecture      : PE32+ DLL, ARM64 (machine 0xAA64)
+Imports           : ADVAPI32.dll CRYPT32.dll KERNEL32.dll Secur32.dll WS2_32.dll
+                    - the operating system only (static CRT); the same set as
+                    win-x64
+Exports           : 954 (all required ones present)
+Debug symbols     : none (as upstream); no unstripped twin
+
+Output SHA-256    : 3ce56914e206ed072af18acac7f9abed7ef4984882f50aab67848d1e138a097a
+Output size       : 2047488 bytes
+Reproducibility   : not byte-reproducible - link.exe stamps the build time into
+                    the image; compare size and gate result, not the hash
+
+Import library    : git2-49e408b.lib (beside this file; NOT packed into the
+                    NuGet package - for native tools that link against the DLL)
+                    228256 bytes, sha256
+                    9b08d390884f5b0655159ffa5ad23fd0e5972a2e100adabdd0f371b2e2ecdf8b
+                    machine AA64, names 950 git_* functions
+
+Gate              : PE machine ARM64, 954 exports with every required one,
+                    import library (machine, required exports), OS-only
+                    imports, 4 required feature-summary lines (Schannel,
+                    OpenSSH exec, CollisionDetection, bundled PCRE) + bundled
+                    zlib - ALL PASSED. Smoke test: COMPILED, NOT RUN (x64 host)
+To finish the gate: on an ARM64 Windows machine, run
+                    tools/libgit2-native-tools/output/win-arm64/smoke-test.exe
+                    (the ARM64 build of linux/smoke-test.c from this run, sha256
+                    449298fae3727c6b1c28128c2ae12639c5e9d79e0a4324493f924f8fe2908f01)
+                    against this DLL by full path; expect version 1.9.7,
+                    features 1983 and SMOKE TEST PASSED. Then run the managed
+                    suite there (an ARM64 .NET 10 SDK) and replace this block
+                    and the win-arm64 entry in BUILD-PROVENANCE.txt.
+
+Vendored on       : 2026-11-18
+
+LICENCE FILES BESIDE THIS ONE (all packed into runtimes/win-arm64/native/):
+  LICENSE-Libgit2.txt  libgit2's COPYING, verbatim: GPLv2 WITH the libgit2
+                       linking exception, plus the licences of the bundled
+                       dependencies (zlib and PCRE2 - both compiled into this
+                       Windows build - among them) and the LGPL-2.1 text
+  LICENSE-Xdiff.txt    the bundled xdiff's own notices (LGPL-2.1-or-later;
+                       xhistogram.c under the Eclipse Distribution License),
+                       verbatim from libgit2/deps/xdiff/ headers
+See THIRD-PARTY-NOTICES.txt in the repository root.

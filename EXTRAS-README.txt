@@ -103,7 +103,7 @@ short:
                         except its README.txt; disposable)
   BUILD-PROVENANCE.txt  the per-RID record: who built each shipped binary,
                         from what, with what, and the result - and which
-                        RIDs are still pending
+                        checks are still outstanding (win-arm64's smoke test)
   LICENSE-Xdiff.txt     the bundled xdiff code's own notices, verbatim from
                         its file headers; every build copies it beside its
                         binary

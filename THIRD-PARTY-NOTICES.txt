@@ -182,7 +182,7 @@ THE SOFTWARE.
         build. A platform appears in the package once its binary has been
         built. Each binary has a .provenance.txt beside it in
         native_libraries/; tools/libgit2-native-tools/BUILD-PROVENANCE.txt
-        has the full record, including which platforms are still pending.
+        has the full record, including which checks are still outstanding.
 
    THIRD-PARTY CODE BUNDLED BY LIBGIT2. libgit2 carries copies of the
    following code in its tree and compiles some of it into the library. Which

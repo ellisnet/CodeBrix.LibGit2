@@ -3,16 +3,26 @@ tools/libgit2-native-tools/windows - building git2-49e408b.dll for win-x64 and
                                      win-arm64
 ================================================================================
 
->>> STATUS 2026-11-18: libgit2 1.9.7. build.libgit2.ps1 is WRITTEN BUT
-    NEVER RUN - it was written (2026-10-17) and re-pointed at 1.9.7
-    (2026-11-18) on Linux, where it cannot run. win-x64 and win-arm64 are
-    PENDING: there is NO binary for them in ../../../native_libraries/. The
-    1.8.6 DLLs adopted from LibGit2Sharp.NativeBinaries 2.0.324 were removed
-    (wrong ABI under an old name), and upstream has published no libgit2 1.9
-    binaries, so these two RIDs must be built HERE, with this script, on
-    Jeremy's Windows machine. Expect to fix something on the first real run;
-    fix it in the script, record it in ../BUILD-PROVENANCE.txt, and rewrite
-    this block. <<<
+>>> STATUS 2026-11-19: libgit2 1.9.7. FIRST RUN DONE. build.libgit2.ps1
+    (written 2026-10-17, re-pointed at 1.9.7 on 2026-11-18, both on Linux) ran
+    UNCHANGED on Jeremy's x64 Windows 11 machine - Visual Studio Professional
+    2026 18.12.1, cl 19.52.37029, cmake 4.4.3 - as
+
+        .\build.libgit2.ps1 -x64 -arm64 -BuildRoot C:\cbx-lg2
+
+    and both RIDs passed their gates and were adopted into
+    ../../../native_libraries/. win-x64 passed the smoke test (features 1983,
+    as derived) and the managed suite. win-arm64 was cross-built: every static
+    check passed, the smoke test is compiled but UNRUN until it is executed on
+    an ARM64 Windows machine (../BUILD-PROVENANCE.txt, its entry).
+
+    PASS A SHORT, NEUTRAL -BuildRoot. libgit2 compiles __FILE__ into its error
+    and assert messages and MSVC has no -ffile-prefix-map, so the build root's
+    path ends up inside the DLL. The default (%TEMP%\codebrix-libgit2-build)
+    puts the builder's user-profile path into a shipped binary; the first
+    2026-11-19 build did exactly that and was discarded. C:\cbx-lg2 was used
+    for the adopted builds. The script still defaults to %TEMP% (unchanged);
+    the gate does not check for it. <<<
 
 WHAT THIS IS
 --------------------------------------------------------------------------------
@@ -121,8 +131,8 @@ THE GATE
      SHA1, init, blob hash, repository init/write/open, shutdown). libgit2 1.9
      widened git_feature_t; the 1.8.6 DLLs returned 15. 1983 is DERIVED from
      src/libgit2/libgit2.c (AUTH_NTLM and AUTH_NEGOTIATE come from SSPI on
-     every Windows build), not yet observed - if the first run reports another
-     value, find out why before changing $ExpectedFeatures. No CA location is
+     every Windows build), and OBSERVED on win-x64 on 2026-11-19 - if a later
+     run reports another value, find out why before changing $ExpectedFeatures. No CA location is
      passed: Schannel uses the Windows certificate store, and libgit2 refuses
      GIT_OPT_SET_SSL_CERT_LOCATIONS for it.
 
