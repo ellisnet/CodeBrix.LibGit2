@@ -241,9 +241,10 @@ Downloaded ONCE, 2026-10-17, to ~/ClaudeHome/libgit2-upstream-scratch/nupkg/:
 Its runtimes/{win-x64,win-arm64,osx-x64,osx-arm64}/native/* (libgit2 1.8.6,
 *-5853918*) WERE the files in ../../native_libraries/<rid>/ for those four RIDs
 until 2026-11-18, when they were removed with the move to libgit2 1.9.7 (wrong
-ABI under an old name). No 1.9 equivalent exists upstream; those four RIDs are
-PENDING a build with ../windows and ../macos (BUILD-PROVENANCE.txt). This
-section is kept as the record of what was shipped before.
+ABI under an old name). No 1.9 equivalent exists upstream; the two osx-* RIDs
+were BUILT with ../macos on 2026-11-19, and the two win-* RIDs are PENDING a
+build with ../windows (BUILD-PROVENANCE.txt). This section is kept as the
+record of what was shipped before.
 
 
 ================================================================================

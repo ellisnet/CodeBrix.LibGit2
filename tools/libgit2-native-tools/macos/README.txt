@@ -3,15 +3,18 @@ tools/libgit2-native-tools/macos - building libgit2-49e408b.dylib for
                                    osx-arm64 and osx-x64
 ================================================================================
 
->>> STATUS 2026-11-18: libgit2 1.9.7. build.sh is WRITTEN BUT NEVER RUN - it
-    was written (2026-10-17) and re-pointed at 1.9.7 (2026-11-18) on Linux,
-    which has no Apple SDK. osx-arm64 and osx-x64 are PENDING: there is NO
-    binary for them in ../../../native_libraries/. The 1.8.6 dylibs adopted
-    from LibGit2Sharp.NativeBinaries 2.0.324 were removed (wrong ABI under an
-    old name), and upstream has published no libgit2 1.9 binaries, so these
-    two RIDs must be built HERE, with this script, on Jeremy's Mac. Expect to
-    fix something on the first real run; fix it in the script, record it in
-    ../BUILD-PROVENANCE.txt, and rewrite this block. <<<
+>>> STATUS 2026-11-19: libgit2 1.9.7. build.sh was written (2026-10-17) and
+    re-pointed at 1.9.7 (2026-11-18) on Linux, and FIRST RUN on 2026-11-19 on
+    Jeremy's Mac mini (Apple M2 Pro, macOS 27.2.1, Xcode 27.2). Both slices
+    were built, passed every gate check (osx-x64's smoke test under Rosetta
+    2), were built a second time byte-identically, and were adopted into
+    ../../../native_libraries/osx-<arch>/. The first run needed two fixes,
+    made in the script and recorded in ../BUILD-PROVENANCE.txt: the smoke test
+    is compiled with -D_DARWIN_C_SOURCE (mkdtemp), and the build passes
+    -ffile-prefix-map so no scratch path ends up in the dylib (with a new gate
+    check for it). The feature mask 1791 derived beforehand was observed
+    exactly. The managed suite passed against the arm64 dylib (1381 tests,
+    0 failed, 34 skipped); it has not been run against the x64 one. <<<
 
 WHAT THIS IS
 --------------------------------------------------------------------------------
@@ -43,13 +46,25 @@ USAGE
   under Rosetta 2 on Apple Silicon (install Rosetta with
   `softwareupdate --install-rosetta` if you want that run).
 
-THE BUILD - UPSTREAM'S RECIPE, EXACTLY
+THE BUILD - UPSTREAM'S RECIPE, PLUS TWO ADDITIONS
 --------------------------------------------------------------------------------
     cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF -DUSE_SSH=exec
           -DLIBGIT2_FILENAME=git2-49e408b -DCMAKE_OSX_ARCHITECTURES=arm64|x86_64
           -DUSE_HTTPS=ON -DUSE_BUNDLED_ZLIB=ON
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0                 (THE MACOS FLOOR)
+          -DCMAKE_C_FLAGS="-ffile-prefix-map=<scratch src>=libgit2
+                           -ffile-prefix-map=<scratch build>=build
+                           -ffile-prefix-map=<tools folder>=libgit2-native-tools"
     cmake --build .
 
+  * the first line is upstream's recipe; the two additions are the deployment
+    target (below) and the prefix maps, which the Linux build passes too:
+    libgit2 embeds __FILE__ in its error and allocation code, and without them
+    the dylib carried the scratch folder under $TMPDIR (found on the first
+    run; the gate now checks for build paths). They do not change the
+    generated code. Note that macOS's $TMPDIR ends in "/": the script drops it
+    before building the scratch path, because CMake collapses "//" and a
+    prefix map spelled with "//" would never match;
   * every one of these options exists, with the same meaning, in libgit2
     1.9.7's CMake (1.9 turned USE_HTTPS into a string option, but ON still
     means "auto-select"); the file name comes from ../linux/pins.env;
@@ -62,8 +77,12 @@ THE BUILD - UPSTREAM'S RECIPE, EXACTLY
     script copies libgit2-49e408b.dylib (cp follows the link). Its install
     name stays @rpath/libgit2-49e408b.1.9.dylib, as built - .NET loads the
     file by path, so the install name is not consulted;
-  * NOT stripped, as upstream. The arm64 linker signs its output ad hoc; the
-    x86_64 output is unsigned - again as upstream.
+  * NOT stripped, as upstream, and no -g: the shipped dylib IS the unstripped
+    build (symbol table kept, no DWARF), so there is no separate twin for
+    ../unstripped/. The arm64 linker signs its output ad hoc; the x86_64
+    output is unsigned - again as upstream.
+  * Reproducible: on 2026-11-19 both slices were built twice from scratch on
+    the same Mac with byte-identical results.
 
 THE MACOS FLOOR
 --------------------------------------------------------------------------------
@@ -80,8 +99,9 @@ FAILS a dylib whose minos is not exactly the requested value. Set
 DEPLOYMENT_TARGET to choose another floor deliberately (a lower one is
 allowed; a higher one breaks the rule), and say so in ../BUILD-PROVENANCE.txt.
 If the installed Xcode's SDK cannot target 14.0 the build stops; that would
-need a decision, not a silent raise. SecureTransport is deprecated by Apple; the upstream
-dylibs use it all the same.
+need a decision, not a silent raise. (Xcode 27.2 / SDK 27.2 targets 14.0
+without complaint, 2026-11-19.) SecureTransport is deprecated by Apple; the
+upstream dylibs use it all the same, and SDK 27.2 still carries it.
 
 THE GATE
 --------------------------------------------------------------------------------
@@ -92,17 +112,20 @@ THE GATE
   4. Exports - every REQUIRED_SYMBOLS name from ../linux/pins.env (nm -gU);
      954 for the 1.9.7 Linux and Android builds (944 for 1.8.6).
   5. minos is exactly DEPLOYMENT_TARGET, 14.0 by default (see THE MACOS FLOOR).
-  6. Feature summary - HTTPS using SecureTransport, SSH using OpenSSH exec,
+  6. No build paths - `strings` finds neither the scratch folder, the tools
+     folder, $HOME nor /var/folders/ in the dylib (added 2026-11-19).
+  7. Feature summary - HTTPS using SecureTransport, SSH using OpenSSH exec,
      SHA1 CollisionDetection, zlib bundled.
-  7. Smoke test - ../linux/smoke-test.c built with cc -arch <slice> and run
-     against the dylib (version 1.9.7, git_libgit2_features() == 1791 =
-     THREADS | HTTPS | SSH | NSEC | HTTP_PARSER | REGEX | I18N | AUTH_NTLM |
-     COMPRESSION | SHA1, init, blob hash, repository init/write/open,
-     shutdown). libgit2 1.9 widened git_feature_t; the 1.8.6 dylibs returned
-     15. 1791 is DERIVED from src/libgit2/libgit2.c (I18N from iconv, ON on
-     Apple; AUTH_NTLM from the bundled ntlmclient over CommonCrypto), not yet
-     observed - if the first run reports another value, find out why before
-     changing EXPECTED_FEATURES in build.sh.
+  8. Smoke test - ../linux/smoke-test.c built with cc -arch <slice>
+     -D_DARWIN_C_SOURCE (smoke-test.c asks for _XOPEN_SOURCE 700, under which
+     Apple's headers hide mkdtemp) and run against the dylib (version 1.9.7,
+     git_libgit2_features() == 1791 = THREADS | HTTPS | SSH | NSEC |
+     HTTP_PARSER | REGEX | I18N | AUTH_NTLM | COMPRESSION | SHA1, init, blob
+     hash, repository init/write/open, shutdown). libgit2 1.9 widened
+     git_feature_t; the 1.8.6 dylibs returned 15. 1791 was DERIVED from
+     src/libgit2/libgit2.c (I18N from iconv, ON on Apple; AUTH_NTLM from the
+     bundled ntlmclient over CommonCrypto) and OBSERVED on both slices on
+     2026-11-19.
      No CA location is passed: SecureTransport uses the keychain, and libgit2
      refuses GIT_OPT_SET_SSL_CERT_LOCATIONS for it.
 
@@ -120,6 +143,6 @@ ADOPTING A BUILT DYLIB
      there; the copies from the build are identical).
   3. Write native_libraries/osx-<arch>/libgit2-49e408b.dylib.provenance.txt
      from BUILD-INFO.txt (the Linux ones are the model), minos above all.
-  4. Replace that RID's PENDING section in ../BUILD-PROVENANCE.txt.
+  4. Replace that RID's section in ../BUILD-PROVENANCE.txt.
   5. Run the managed test suite on a Mac before publishing.
 ================================================================================

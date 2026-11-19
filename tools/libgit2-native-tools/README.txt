@@ -52,8 +52,8 @@ FOLDER MAP
   README.txt              this document
   BUILD-PROVENANCE.txt    what was actually built, when, by what, with what
                           hashes - one section per runtime identifier (the
-                          four Windows / macOS ones PENDING), and the
-                          comparison with the 1.8.6 builds
+                          two Windows ones PENDING), and the comparison with
+                          the 1.8.6 builds
   UPSTREAM.txt            where every vendored tree came from: commit, tag,
                           dates, licence, the exact copy commands, tree
                           checksums
@@ -102,15 +102,16 @@ FOLDER MAP
   macos/                  osx-arm64, osx-x64. build.sh (upstream's Darwin
                           branch adapted: SecureTransport), README.txt.
                           Written 2026-10-17, re-pointed at 1.9.7 2026-11-18,
-                          UNRUN: the osx-* RIDs are PENDING - no binary until
-                          Jeremy runs it on a Mac
+                          first run 2026-11-19 on Jeremy's Mac: both osx-*
+                          RIDs built and adopted
 
   unstripped/             COMMITTED. The pre-strip twin of every native built
-                          here, one folder per RID, with SHA256SUMS and a
-                          README.txt carrying the rule for keeping them in step
-                          with the binaries in ../../native_libraries/<rid>/.
-                          For crash triage: never shipped, never an input to
-                          any build
+                          here that is stripped (Linux, Android), one folder
+                          per RID, with SHA256SUMS and a README.txt carrying
+                          the rule for keeping them in step with the binaries
+                          in ../../native_libraries/<rid>/. The macOS dylibs
+                          ship unstripped, so they have no twin. For crash
+                          triage: never shipped, never an input to any build
 
   output/                 build results (git-ignored except its README.txt).
                           Disposable - the pre-strip copies that are meant to
@@ -141,16 +142,17 @@ THE NINE RUNTIME IDENTIFIERS
                                                            (+ git2-49e408b.lib)
   win-arm64      PENDING: windows/build.libgit2.ps1 -arm64 git2-49e408b.dll
                                                            (+ git2-49e408b.lib)
-  osx-x64        PENDING: macos/build.sh x64               libgit2-49e408b.dylib
-  osx-arm64      PENDING: macos/build.sh arm64             libgit2-49e408b.dylib
+  osx-x64        macos/build.sh x64                        libgit2-49e408b.dylib
+  osx-arm64      macos/build.sh arm64                      libgit2-49e408b.dylib
 
 The three Linux and the two Android RIDs are BUILT HERE from libgit2/ (and
-mbedtls/). The Windows and macOS RIDs are PENDING: for libgit2 1.8.6 their
-binaries were adopted from LibGit2Sharp.NativeBinaries 2.0.324, but upstream
-has published no libgit2 1.9 binaries, so for 1.9.7 they must be BUILT with
-the scripts in windows/ and macos/ (never yet run) on Jeremy's Windows machine
-and Mac. Until then native_libraries/ has no binary for those four RIDs and
-the package packs none for them. Upstream's win-x86, linux-arm, linux-ppc64le
+mbedtls/) on the Linux machine, and the two macOS RIDs on Jeremy's Mac
+(2026-11-19). The Windows RIDs are PENDING: for libgit2 1.8.6 their binaries
+(and the macOS ones) were adopted from LibGit2Sharp.NativeBinaries 2.0.324,
+but upstream has published no libgit2 1.9 binaries, so for 1.9.7 they must be
+BUILT with the script in windows/ (never yet run) on Jeremy's Windows machine.
+Until then native_libraries/ has no binary for those two RIDs and the package
+packs none for them. Upstream's win-x86, linux-arm, linux-ppc64le
 and musl RIDs are not shipped. BUILD-PROVENANCE.txt says, per RID, which route
 each binary took.
 

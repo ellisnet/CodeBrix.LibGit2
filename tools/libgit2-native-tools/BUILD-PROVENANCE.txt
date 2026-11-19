@@ -13,10 +13,11 @@ section here is updated from that build's output/<rid>/BUILD-INFO.txt (or
 BUILD-INFO.json) and the <file>.provenance.txt beside the binary is written from
 the same values.
 
-STATE ON 2026-11-18: libgit2 1.9.7. Five RIDs BUILT HERE and gated (linux-x64,
-linux-arm64, linux-riscv64, android-arm64, android-x64). Four RIDs PENDING - to
-be built by Jeremy on his Windows machine and his Mac (win-x64, win-arm64,
-osx-x64, osx-arm64); there is NO upstream binary to adopt for libgit2 1.9.
+STATE ON 2026-11-19: libgit2 1.9.7. Seven RIDs BUILT HERE and gated (linux-x64,
+linux-arm64, linux-riscv64, android-arm64, android-x64 on the Linux machine;
+osx-arm64, osx-x64 on Jeremy's Mac on 2026-11-19). Two RIDs PENDING - to be
+built by Jeremy on his Windows machine (win-x64, win-arm64); there is NO
+upstream binary to adopt for libgit2 1.9.
 
 Common to every entry below
 --------------------------------------------------------------------------------
@@ -53,8 +54,8 @@ Common to every entry below
                     unconditionally. So the SAME configuration returns a larger
                     git_libgit2_features() than 1.8.6 did: Linux 1727 (was 15),
                     Android 1723 (was 11), Windows 1983 expected (was 15), macOS
-                    1791 expected (was 15). The low four bits are unchanged
-                    everywhere.
+                    1791 (was 15; observed 2026-11-19). The low four bits are
+                    unchanged everywhere.
 
 Linux (the three linux-* entries)
 --------------------------------------------------------------------------------
@@ -208,29 +209,57 @@ Windows (the two win-* entries)                                        PENDING
                     static CRT; Schannel, not WinHTTP
   Gate            : windows/README.txt, THE GATE
 
-macOS (the two osx-* entries)                                          PENDING
+macOS (the two osx-* entries)
 --------------------------------------------------------------------------------
-  State           : NO BINARY. The adopted 1.8.6 dylibs (2.0.324) were REMOVED
-                    on 2026-11-18, for the same reason. These RIDs must be
-                    BUILT, by Jeremy, on a Mac
-  Route           : macos/build.sh arm64 / x64 - written 2026-10-17, re-pointed
-                    at 1.9.7 on 2026-11-18, NEVER RUN
+  Route           : macos/build.sh (both slices in one run) on Jeremy's Mac
+                    mini (Apple M2 Pro, macOS 27.2.1), Xcode 27.2 / SDK 27.2,
+                    Apple clang 21.0.0, cmake 4.4.5 (Homebrew), CMake's default
+                    generator (Unix Makefiles). osx-x64 is CROSS-built there
   cmake options   : -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF -DUSE_SSH=exec
                     -DLIBGIT2_FILENAME=git2-49e408b
                     -DCMAKE_OSX_ARCHITECTURES=arm64|x86_64 -DUSE_HTTPS=ON
                     (-> SecureTransport) -DUSE_BUNDLED_ZLIB=ON
-                    -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 (upstream's 1.8.6-era
-                    recipe plus the deployment target, which upstream does not
-                    pass; DEPLOYMENT_TARGET overrides the 14.0)
-  Expected        : libgit2-49e408b.dylib (built as libgit2-49e408b.1.9.7.dylib,
-                    install name @rpath/libgit2-49e408b.1.9.dylib); features
-                    1791 = THREADS | HTTPS | SSH | NSEC | HTTP_PARSER | REGEX |
-                    I18N | AUTH_NTLM | COMPRESSION | SHA1 (derived, not yet
-                    observed); links CoreFoundation, Security, libiconv,
-                    libSystem only. MINIMUM macOS = 14.0, the same as the
-                    1.8.6 dylibs they replace (the owner's rule: no newer
-                    macOS than before); the gate fails any other value
-  Gate            : macos/README.txt, THE GATE
+                    (= upstream's 1.8.6-era Darwin recipe), plus
+                    -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 (upstream passes none)
+                    and CMAKE_C_FLAGS="-ffile-prefix-map=<scratch src>=libgit2
+                    -ffile-prefix-map=<scratch build>=build
+                    -ffile-prefix-map=<tools folder>=libgit2-native-tools"
+                    (as Linux, without its -g). CMake's Release -O3 -DNDEBUG.
+                    NOT stripped, as upstream - the shipped dylib is the
+                    unstripped build (symbol table kept, no DWARF), so there is
+                    no separate twin to keep
+  Feature summary : both slices: threadsafe; nanoseconds; futimens;
+                    HTTPS using SecureTransport; SHA1 using CollisionDetection;
+                    SHA256 using CommonCrypto; http-parser bundled; regex using
+                    system regcomp_l; xdiff bundled; SSH using OpenSSH exec
+                    support; zlib bundled; ntlmclient; iconv
+                    disabled: experimental SHA256 API, GSSAPI, debug pool /
+                    strict alloc / strict open
+  git_libgit2_features(): 1791 = THREADS | HTTPS | SSH | NSEC | HTTP_PARSER |
+                    REGEX | I18N | AUTH_NTLM | COMPRESSION | SHA1 - the value
+                    derived from the source beforehand, now OBSERVED (smoke
+                    test, both slices)
+  Minimum macOS   : 14.0 on both slices, the same as the 1.8.6 dylibs they
+                    replace (the owner's rule: no newer macOS than before); the
+                    gate fails any other value
+  Warnings        : 0 compiler warnings; the CMake deprecation warning
+  Reproducibility : both slices built TWICE from scratch on 2026-11-19 UTC
+                    (04:42 and 04:43): byte-identical
+  First-run fixes : the script had never run before 2026-11-19. Two fixes, both
+                    IN THE SCRIPT (the vendored source and the shared
+                    smoke-test.c are untouched):
+                    1. the smoke test did not compile: smoke-test.c defines
+                       _XOPEN_SOURCE 700, under which Apple's headers do not
+                       declare mkdtemp(). The script now compiles it with
+                       -D_DARWIN_C_SOURCE.
+                    2. the dylib embedded the scratch folder under $TMPDIR
+                       (libgit2's __FILE__ in its error and allocation code).
+                       The script now passes -ffile-prefix-map as the Linux
+                       build does, strips the trailing "/" of $TMPDIR before
+                       building the scratch path (CMake collapses "//", which
+                       a prefix map would otherwise fail to match), and the
+                       gate gained "no build paths in the dylib".
+  Gate            : macos/README.txt, THE GATE (now 8 checks)
 
 ================================================================================
 linux-x64                                                         BUILT + PASSED
@@ -466,22 +495,75 @@ run, or cross-built on x64):
 then adopt and record as for win-x64.
 
 ================================================================================
-osx-x64                                                                  PENDING
+osx-x64                                                           BUILT + PASSED
 ================================================================================
-No binary. To be built by Jeremy on a Mac (either kind; the smoke test runs on
-Intel, or under Rosetta 2 on Apple Silicon):
-    macos/build.sh x64
-then adopt libgit2-49e408b.dylib, LICENSE-Libgit2.txt and LICENSE-Xdiff.txt as
-macos/README.txt describes, write
-native_libraries/osx-x64/libgit2-49e408b.dylib.provenance.txt (minimum macOS
-above all), and replace this section with the build's BUILD-INFO.txt values.
+Built            : 2026-11-19 04:43:57 UTC (run B; run A 04:42:40 UTC,
+                   identical bytes)
+Built by         : macos/build.sh (both slices in one run)
+Build host       : Mac mini (Mac14,12), Apple M2 Pro, macOS 27.2.1, arm64 -
+                   cross-compiling for x86_64
+Duration         : 34s (both runs)
+Toolchain        : Xcode 27.2 (27B52), SDK 27.2, Apple clang version 21.0.0
+                   (clang-2100.4.1.1), ld-27106.1, cmake version 4.4.5
+Warnings         : 0 compiler warnings; the CMake deprecation warning
+
+File             : libgit2-49e408b.dylib    built as libgit2-49e408b.1.9.7.dylib
+Install name     : @rpath/libgit2-49e408b.1.9.dylib
+Size             : 1,310,896 bytes (not stripped, as upstream)
+SHA256           : 70e449aafe5e4ec9c5a13b7f3fcc60d5bd67587aa3e480b560fb30b87402c158
+LC_UUID          : B6A35A5E-7A18-3C72-AA1F-241FBB1549D0
+Mach-O           : thin x86_64 dynamic library; unsigned (as upstream)
+Minimum macOS    : 14.0 (LC_BUILD_VERSION minos)
+Links            : CoreFoundation.framework, Security.framework,
+                   /usr/lib/libiconv.2.dylib, /usr/lib/libSystem.B.dylib
+Exports          : 954 (950 git_*)
+Gate             : thin x86_64, install name recorded, system-only links, no
+                   LC_RPATH, 20/20 required exports, minos 14.0, no build
+                   paths, 4/4 feature lines, smoke test PASSED (1.9.7,
+                   features 1791, init, blob
+                   ce013625030ba8dba906f756967f9e9ca394464a, repository
+                   init/write/open, shutdown)
+Note             : the smoke test ran under Rosetta 2 on the Apple Silicon
+                   build Mac, NOT on Intel hardware, and the managed test
+                   suite has NOT been run against this file (the build Mac has
+                   no x64 .NET runtime). Running it on an Intel Mac remains
+                   worth doing before a release.
+Adopted into native_libraries/osx-x64/ : YES, 2026-11-19, with
+                   LICENSE-Libgit2.txt, LICENSE-Xdiff.txt (already there,
+                   byte-identical to the build's copies) and
+                   libgit2-49e408b.dylib.provenance.txt
 
 ================================================================================
-osx-arm64                                                                PENDING
+osx-arm64                                                         BUILT + PASSED
 ================================================================================
-No binary. To be built by Jeremy on a Mac:
-    macos/build.sh arm64
-then adopt and record as for osx-x64.
+Built            : 2026-11-19 04:43:22 UTC (run B; run A 04:42:06 UTC,
+                   identical bytes)
+Built by         : macos/build.sh (both slices in one run)
+Build host       : Mac mini (Mac14,12), Apple M2 Pro, macOS 27.2.1, arm64 -
+                   native
+Duration         : 32s (run B; 34s run A)
+Toolchain        : as osx-x64
+Warnings         : 0 compiler warnings; the CMake deprecation warning
+
+File             : libgit2-49e408b.dylib    built as libgit2-49e408b.1.9.7.dylib
+Install name     : @rpath/libgit2-49e408b.1.9.dylib
+Size             : 1,266,232 bytes (not stripped, as upstream)
+SHA256           : 6bb863400b6936781769206e0c711f710c0b2d4f94838fd7c1b9a2def2f1d1c7
+LC_UUID          : 9C72A12D-38C3-3181-80EB-7493F63EF509
+Mach-O           : thin arm64 dynamic library; signed ad hoc by the linker
+Minimum macOS    : 14.0 (LC_BUILD_VERSION minos)
+Links            : CoreFoundation.framework, Security.framework,
+                   /usr/lib/libiconv.2.dylib, /usr/lib/libSystem.B.dylib
+Exports          : 954 (950 git_*)
+Gate             : as osx-x64 - every check passed; smoke test run natively
+                   (features 1791)
+Managed tests    : dotnet test --solution CodeBrix.LibGit2.slnx -c Release on
+                   the build Mac, against this file: 1381 tests, 0 failed, 34
+                   skipped (the same as Linux) - 2026-11-19
+Adopted into native_libraries/osx-arm64/ : YES, 2026-11-19, with
+                   LICENSE-Libgit2.txt, LICENSE-Xdiff.txt (already there,
+                   byte-identical to the build's copies) and
+                   libgit2-49e408b.dylib.provenance.txt
 
 ================================================================================
 COMPARISON WITH THE 1.8.6 BUILDS (record only)
@@ -499,6 +581,10 @@ history. Same toolchains, same options, same images:
   linux-riscv64       1,629,360 B                   1,707,288 B
   android-arm64       2,139,752 B                   2,190,352 B
   android-x64         2,187,256 B                   2,243,992 B
+  osx-arm64           1,214,312 B (adopted from     1,266,232 B (built here)
+                      upstream 2.0.324)
+  osx-x64             1,258,704 B (adopted)         1,310,896 B (built here)
+  minimum macOS       14.0                          14.0
   SONAME (Linux)      libgit2-5853918.so.1.8        libgit2-49e408b.so.1.9
   exports             944                           954 (+11, -1: see Common)
   NEEDED              unchanged on every RID

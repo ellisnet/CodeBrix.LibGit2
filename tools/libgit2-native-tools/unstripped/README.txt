@@ -44,12 +44,14 @@ twin's):
 The 1.8.6 twins (libgit2-5853918.so) were removed with their binaries on
 2026-11-18; they are in git history.
 
-PENDING - nothing to store yet
+NOTHING STORED FOR macOS OR (YET) WINDOWS
 --------------------------------------------------------------------------------
-The win-* and osx-* RIDs have no binary for libgit2 1.9.7 yet (see
-../BUILD-PROVENANCE.txt). When they are built with the scripts in ../windows
-and ../macos, any debug-symbol twin (a .pdb, should a Windows build make one;
-the dylibs ship unstripped) lands here under the same rule.
+The osx-* dylibs (built 2026-11-19) are NOT stripped - as upstream, the
+shipped file is itself the unstripped build (symbol table kept; no -g, so no
+DWARF and no .dSYM) - so there is no twin to store. The win-* RIDs have no
+binary for libgit2 1.9.7 yet (see ../BUILD-PROVENANCE.txt); when they are
+built with ../windows, any debug-symbol twin (a .pdb, should the Windows build
+make one) lands here under the same rule.
 
 THE RULE
 --------------------------------------------------------------------------------

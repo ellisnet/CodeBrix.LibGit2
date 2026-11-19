@@ -1,0 +1,103 @@
+libgit2-49e408b.dylib -- macOS on Intel (osx-x64)
+================================================================================
+This binary was BUILT HERE, from the libgit2 source snapshot vendored in this
+repository, by:
+
+    tools/libgit2-native-tools/macos/build.sh   (both slices in one run)
+
+on Jeremy's Apple Silicon Mac with Apple's own toolchain - CROSS-BUILT for
+x86_64 (CMAKE_OSX_ARCHITECTURES=x86_64). Nothing was downloaded; the build
+reaches nothing outside this repository. It was built twice from scratch on
+2026-11-19 UTC (runs A and B) with byte-identical results.
+
+libgit2 version   : 1.9.7 (tag v1.9.7, released 2026-08-13)
+libgit2 commit    : 49e408b3208bc3093757a1c2db938d3590f3f412
+Source            : tools/libgit2-native-tools/libgit2/ (unmodified, .github/
+                    left out; see tools/libgit2-native-tools/UPSTREAM.txt)
+Patches applied   : none
+
+Built             : 2026-11-19 04:43:57 UTC (run B; run A 04:42:40 UTC the same
+                    day, identical bytes)
+Build duration    : 34s (configure + build + gate)
+Build host        : Mac mini (Mac14,12), Apple M2 Pro, macOS 27.2.1, arm64 -
+                    cross-compiling for x86_64
+Toolchain         : Xcode 27.2 (27B52), macOS SDK 27.2
+                    Apple clang version 21.0.0 (clang-2100.4.1.1)
+                    ld-27106.1
+                    cmake version 4.4.5 (Homebrew), CMake's default generator
+                    (Unix Makefiles)
+CMake options     : -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF
+                    -DUSE_SSH=exec -DLIBGIT2_FILENAME=git2-49e408b
+                    -DCMAKE_OSX_ARCHITECTURES=x86_64 -DUSE_HTTPS=ON
+                    -DUSE_BUNDLED_ZLIB=ON
+                    (= upstream build.libgit2.sh's 1.8.6-era Darwin flags)
+                    -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 (not passed by upstream;
+                    see "Minimum macOS" below)
+                    CMAKE_C_FLAGS="-ffile-prefix-map=<scratch src>=libgit2
+                      -ffile-prefix-map=<scratch build>=build
+                      -ffile-prefix-map=<tools folder>=libgit2-native-tools"
+                    Release flags -O3 -DNDEBUG (CMake's); NOT stripped, as
+                    upstream; no -g
+Warnings          : 0 compiler warnings; one CMake deprecation warning
+                    (libgit2's cmake_minimum_required(VERSION 3.5.1) under
+                    CMake 4)
+
+Features (libgit2's CMake summary):
+                    identical to osx-arm64: threadsafe, nanoseconds, futimens,
+                    HTTPS using SecureTransport, SHA1 using CollisionDetection,
+                    SHA256 using CommonCrypto, http-parser bundled (llhttp),
+                    regex using system regcomp_l, xdiff bundled,
+                    SSH using OpenSSH exec support, zlib bundled, ntlmclient,
+                    iconv
+git_libgit2_features(): 1791 = THREADS | HTTPS | SSH | NSEC | HTTP_PARSER |
+                    REGEX | I18N | AUTH_NTLM | COMPRESSION | SHA1 (smoke test)
+
+Architecture      : Mach-O 64-bit dynamic library, x86_64 (thin)
+Built as          : libgit2-49e408b.1.9.7.dylib, shipped as
+                    libgit2-49e408b.dylib
+Install name      : @rpath/libgit2-49e408b.1.9.dylib (as libgit2 builds it;
+                    .NET loads the file by path, so it is not consulted)
+LC_RPATH          : none
+Links             : /System/Library/Frameworks/CoreFoundation.framework/
+                    Versions/A/CoreFoundation
+                    /System/Library/Frameworks/Security.framework/Versions/A/
+                    Security
+                    /usr/lib/libiconv.2.dylib
+                    /usr/lib/libSystem.B.dylib
+                    - the system only
+Minimum macOS     : 14.0 (LC_BUILD_VERSION minos) - the same floor as the
+                    1.8.6 dylib this one replaces
+Exports           : 954 (950 git_*)
+LC_UUID           : B6A35A5E-7A18-3C72-AA1F-241FBB1549D0
+Signature         : none (the x86_64 linker does not sign; macOS on Intel does
+                    not require it); not notarised
+
+Output SHA-256    : 70e449aafe5e4ec9c5a13b7f3fcc60d5bd67587aa3e480b560fb30b87402c158
+Output size       : 1310896 bytes
+Unstripped twin   : none - this file IS the unstripped build (symbol table
+                    kept; no DWARF, as no -g is passed)
+
+Gate              : thin x86_64 Mach-O, install name recorded, system-only
+                    links, no LC_RPATH, 20 required exports, minos 14.0 as
+                    requested, no build paths in the dylib, 4 required
+                    feature-summary lines, smoke test (version 1.9.7,
+                    features 1791, init, blob hash, repository
+                    init/write/open, shutdown)
+                    - ALL PASSED
+Smoke test ran    : under Rosetta 2 on the Apple Silicon build Mac - NOT on
+                    real Intel hardware.
+Managed tests     : NOT run against this file (the build Mac has no x64 .NET
+                    runtime). Running the suite on an Intel Mac remains worth
+                    doing before a release.
+
+Vendored on       : 2026-11-18
+
+LICENCE FILES BESIDE THIS ONE (all packed into runtimes/osx-x64/native/):
+  LICENSE-Libgit2.txt  libgit2's COPYING, verbatim: GPLv2 WITH the libgit2
+                       linking exception, plus the licences of the bundled
+                       zlib, llhttp, ntlmclient, SHA-1 collision detection,
+                       wildmatch and others, and the LGPL-2.1 text
+  LICENSE-Xdiff.txt    the bundled xdiff's own notices (LGPL-2.1-or-later;
+                       xhistogram.c under the Eclipse Distribution License),
+                       verbatim from libgit2/deps/xdiff/ headers
+See THIRD-PARTY-NOTICES.txt in the repository root.

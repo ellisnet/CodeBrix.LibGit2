@@ -294,14 +294,17 @@ native_libraries/<rid>/<binary>.provenance.txt):
       runtime, HTTPS via Schannel, SSH = exec). See BUILDING THE WINDOWS AND
       MACOS BINARIES below.
   osx-arm64, osx-x64
-      TO BE BUILT on Jeremy's Apple Silicon Mac by
+      BUILT on Jeremy's Apple Silicon Mac (2026-11-19) by
       tools/libgit2-native-tools/macos/build.sh (Apple clang, HTTPS via
-      SecureTransport, SSH = exec). See the same section.
+      SecureTransport, SSH = exec, minimum macOS 14.0, not stripped - as
+      upstream). osx-x64 is cross-built there and smoke-tested under Rosetta
+      2. See the same section.
 
 A RID that has not been built yet has NO binary in native_libraries/<rid>/
-(only its licence files). The csproj packs each native file only when it
-exists, so the package still builds - and silently lacks that platform. DO NOT
-PUBLISH until all nine are present (PACKAGING AND PUBLISHING has the check).
+(only its licence files) - as of 2026-11-19 that is win-x64 and win-arm64.
+The csproj packs each native file only when it exists, so the package still
+builds - and silently lacks that platform. DO NOT PUBLISH until all nine are
+present (PACKAGING AND PUBLISHING has the check).
 
 How to rebuild one RID or all of them: tools/libgit2-native-tools/README.txt
 and the per-platform README.txt it points to. Build tools (cmake, ninja,
@@ -386,11 +389,12 @@ hard-coded native value against the new headers, not only the functions.
 BUILDING THE WINDOWS AND MACOS BINARIES
 =======================================
 Four of the nine binaries cannot be built on the Linux development machine.
-The two scripts below were written on Linux and HAVE NEVER BEEN RUN (as of
-2026-11-18). Expect to fix something on the first real run of each; when that
-happens fix the script, note what was wrong in
-tools/libgit2-native-tools/BUILD-PROVENANCE.txt, and update the STATUS block
-at the top of that platform's README.txt.
+The two scripts below were written on Linux. The macOS one was FIRST RUN on
+2026-11-19 and needed two fixes (recorded in
+tools/libgit2-native-tools/BUILD-PROVENANCE.txt); the Windows one HAS NEVER
+BEEN RUN. Expect to fix something on its first real run; when that happens
+fix the script, note what was wrong in BUILD-PROVENANCE.txt, and update the
+STATUS block at the top of that platform's README.txt.
 
 Before either: pull the repository so the machine has the 1.9.7 tree, pins and
 scripts. The scripts download nothing and install nothing; they stop with a
@@ -457,6 +461,9 @@ Detailed reference: tools/libgit2-native-tools/windows/README.txt.
 
 ON THE APPLE SILICON MAC (builds osx-arm64 AND osx-x64)
 --------------------------------------------------------
+DONE 2026-11-19 for libgit2 1.9.7 (Mac mini, Apple M2 Pro, macOS 27.2.1,
+Xcode 27.2): both slices built, gated, reproduced byte-identically and
+adopted; the steps below are what to do the next time.
 Detailed reference: tools/libgit2-native-tools/macos/README.txt.
 
  1. Prerequisites (once):
@@ -492,11 +499,14 @@ Detailed reference: tools/libgit2-native-tools/macos/README.txt.
         installed. Under Rosetta it is still not real Intel hardware; say so
         in its provenance.
       - The expected feature mask in the script (1791) was DERIVED from the
-        libgit2 source, never observed. If the smoke test reports another
-        number, find out which feature differs before changing the script.
+        libgit2 source and OBSERVED on both slices on 2026-11-19. If a later
+        smoke test reports another number, find out which feature differs
+        before changing the script.
       - The arm64 file is signed ad hoc by the linker; the x64 file is
         unsigned. Neither is notarised; .NET loads them by path, which does
         not need it.
+      - The dylibs are not stripped (as upstream), so unlike Linux and
+        Android there is no unstripped twin to keep.
 
  5. Adopt each result (for osx-arm64, and the same for osx-x64):
       - read output/osx-arm64/BUILD-INFO.txt (the minimum macOS above all);
@@ -504,7 +514,7 @@ Detailed reference: tools/libgit2-native-tools/macos/README.txt.
         LICENSE-*.txt files there are already current);
       - write native_libraries/osx-arm64/libgit2-49e408b.dylib.provenance.txt
         from BUILD-INFO.txt;
-      - replace that RID's PENDING section in
+      - replace that RID's section in
         tools/libgit2-native-tools/BUILD-PROVENANCE.txt.
 
  6. Run the managed tests on the Mac (they exercise the arm64 dylib):
@@ -512,6 +522,10 @@ Detailed reference: tools/libgit2-native-tools/macos/README.txt.
         dotnet test --solution CodeBrix.LibGit2.slnx -c Release
     First proof of the 1.9 interop on macOS, including the one binding that
     is special there (the variadic options call on Apple Silicon).
+    Result 2026-11-19 (osx-arm64 dylib, Release): 1381 tests, 0 failed, 34
+    skipped - the same as Linux. The osx-x64 dylib has had only its smoke
+    test (under Rosetta 2): the managed suite was not run against it, as
+    the build Mac has no x64 .NET runtime.
 
 AFTER BOTH MACHINES
 -------------------

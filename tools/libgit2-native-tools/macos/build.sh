@@ -3,14 +3,14 @@
 # build.sh - build libgit2-49e408b.dylib for osx-arm64 and/or osx-x64, from this repository
 # ==============================================================================================
 #
-#   NEVER YET RUN. Written on Linux on 2026-10-17 for libgit2 1.8.6, adapted from upstream
+#   Written on Linux on 2026-10-17 for libgit2 1.8.6, adapted from upstream
 #   libgit2sharp.nativebinaries' build.libgit2.sh, Darwin branch (a verbatim copy is in
 #   ../reference-upstream/build.libgit2.sh - upstream's 1.8.6-era recipe; upstream has no
-#   packaging for libgit2 1.9). Re-pointed at libgit2 1.9.7 on 2026-11-18, still on Linux and
-#   still unrun: the osx-x64 / osx-arm64 binaries are PENDING until this script is run on a
-#   Mac. Expect to fix something on the first real run; fix it IN THE SCRIPT and record it
-#   in ../BUILD-PROVENANCE.txt, then rewrite this header and README.txt's status block with
-#   what the run established.
+#   packaging for libgit2 1.9). Re-pointed at libgit2 1.9.7 on 2026-11-18. FIRST RUN on
+#   2026-11-19 on an Apple Silicon Mac (macOS 27.2.1, Xcode 27.2): both slices built, gated,
+#   reproduced byte-identically and adopted. That run fixed two things here - the smoke-test
+#   compile (-D_DARWIN_C_SOURCE) and scratch paths in the dylib (-ffile-prefix-map, $TMPDIR's
+#   trailing slash, a build-path gate check); ../BUILD-PROVENANCE.txt has the details.
 #
 #   ./build.sh arm64          build osx-arm64
 #   ./build.sh x64            build osx-x64
@@ -32,12 +32,15 @@
 #     -DLIBGIT2_FILENAME=git2-49e408b -DCMAKE_OSX_ARCHITECTURES=arm64|x86_64   (name from pins.env)
 #     -DUSE_HTTPS=ON -DUSE_BUNDLED_ZLIB=ON
 #   (USE_HTTPS=ON on a Mac auto-selects SecureTransport), CMake's default generator, then
-#   `cmake --build .`. Upstream does not strip the dylib and neither does this.
+#   `cmake --build .`. Upstream does not strip the dylib and neither does this (so the shipped
+#   file is itself the unstripped build; there is no separate twin).
 #
 # WHAT IT CHANGES, AND WHY
 #   * the source is ../libgit2 (the vendored, unmodified snapshot) COPIED to a scratch folder
 #     and built there - upstream built inside its libgit2 submodule;
 #   * the pins come from ../linux/pins.env, the one place every platform reads them from;
+#   * -DCMAKE_OSX_DEPLOYMENT_TARGET (above) and CMAKE_C_FLAGS=-ffile-prefix-map=... (as the
+#     Linux build), so no scratch path is embedded through __FILE__;
 #   * output goes to ../output/osx-<arch>/ with LICENSE-Libgit2.txt, LICENSE-Xdiff.txt,
 #     BUILD-INFO.txt and SHA256SUMS.txt beside the dylib;
 #   * a verification gate runs before anything is called a result (README.txt, THE GATE).
@@ -56,7 +59,10 @@ first_line() { sed -n '1p'; }
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TOOLS_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 OUTPUT_DIR="$TOOLS_DIR/output"
-SCRATCH_ROOT="${TMPDIR:-/tmp}/codebrix-libgit2-build-macos"
+# macOS's $TMPDIR ends in "/". Drop it BEFORE appending: CMake collapses a "//" in the paths
+# it hands the compiler, and a -ffile-prefix-map spelled with "//" would then never match.
+SCRATCH_ROOT="${TMPDIR:-/tmp}"
+SCRATCH_ROOT="${SCRATCH_ROOT%/}/codebrix-libgit2-build-macos"
 
 # shellcheck source=../linux/pins.env
 . "$TOOLS_DIR/linux/pins.env"
@@ -75,8 +81,8 @@ ALLOWED_DYLIBS="/System/Library/Frameworks/CoreFoundation.framework/Versions/A/C
 # 1.9.7 macOS build must return 15 | HTTP_PARSER 16 | REGEX 32 | I18N 64 (iconv, ON on Apple) |
 # AUTH_NTLM 128 (bundled ntlmclient over CommonCrypto) | COMPRESSION 512 | SHA1 1024 = 1791.
 # AUTH_NEGOTIATE 256 stays clear (USE_GSSAPI is OFF by default), SHA256 2048 too (experimental
-# API off). Derived from src/libgit2/libgit2.c, NOT yet observed on a real build - if the first
-# run reports another value, find out why before changing this number.
+# API off). Derived from src/libgit2/libgit2.c, and observed on both slices on 2026-11-19 - if a
+# later run reports another value, find out why before changing this number.
 EXPECTED_FEATURES=1791
 
 # ----------------------------------------------------------------------------------------------
@@ -120,6 +126,10 @@ build_slice() {
                    "-DLIBGIT2_FILENAME=$LIBGIT2_FILENAME" "-DCMAKE_OSX_ARCHITECTURES=$osxarch"
                    -DUSE_HTTPS=ON -DUSE_BUNDLED_ZLIB=ON)
     opts+=("-DCMAKE_OSX_DEPLOYMENT_TARGET=$DEPLOYMENT_TARGET")
+    # -ffile-prefix-map, as ../linux/container-build.sh does: libgit2 embeds __FILE__ (its error
+    # and allocation paths), so without it the dylib carries the scratch folder under $TMPDIR.
+    # The first real run (2026-11-18) found exactly that. No effect on the generated code.
+    opts+=("-DCMAKE_C_FLAGS=-ffile-prefix-map=$scratch=libgit2 -ffile-prefix-map=$build=build -ffile-prefix-map=$TOOLS_DIR=libgit2-native-tools")
     echo "  cmake ${opts[*]}"
     cmake -S "$scratch" -B "$build" "${opts[@]}" > "$SCRATCH_ROOT/$rid/configure.log" 2>&1 \
         || { tail -60 "$SCRATCH_ROOT/$rid/configure.log" >&2; echo "ERROR: cmake configure failed" >&2; exit 1; }
@@ -172,12 +182,18 @@ build_slice() {
         fail "minimum macOS is ${minos:-unknown}, but $DEPLOYMENT_TARGET was requested (DEPLOYMENT_TARGET). The dylib would refuse to load on the macOS versions in between."
     fi
 
+    local hits; hits="$(strings -a "$lib" | grep -F -e "$SCRATCH_ROOT" -e "$TOOLS_DIR" -e "$HOME" -e "/var/folders/" || true)"
+    [ -z "$hits" ] && pass "no build paths in the dylib" || fail "build paths in the dylib: $(printf '%s\n' "$hits" | first_line)"
+
     local want
     for want in "HTTPS, using SecureTransport" "SSH, using OpenSSH exec support" "SHA1, using CollisionDetection" "zlib, using bundled zlib"; do
         printf '%s\n' "$summary" | grep -F -x -- " * $want" > /dev/null && pass "feature: $want" || fail "feature summary lacks: $want"
     done
 
-    cc -std=c11 -O1 -arch "$osxarch" "-mmacosx-version-min=$DEPLOYMENT_TARGET" -o "$out/smoke-test" "$TOOLS_DIR/linux/smoke-test.c"
+    # -D_DARWIN_C_SOURCE: smoke-test.c asks for _XOPEN_SOURCE 700, and under that Apple's
+    # headers do not declare mkdtemp() (found on the first real run, 2026-11-18); Darwin's own
+    # feature macro makes the full API visible. The shared source stays as it is on Linux.
+    cc -std=c11 -O1 -D_DARWIN_C_SOURCE -arch "$osxarch" "-mmacosx-version-min=$DEPLOYMENT_TARGET" -o "$out/smoke-test" "$TOOLS_DIR/linux/smoke-test.c"
     local smoke="(not run - this Mac cannot execute $osxarch)"
     if arch "-$osxarch" /usr/bin/true 2> /dev/null; then
         smoke="$(arch "-$osxarch" "$out/smoke-test" "$lib" "$LIBGIT2_VERSION" "$EXPECTED_FEATURES" 2>&1)" \
